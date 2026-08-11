@@ -1,0 +1,24 @@
+{
+  "zone_visit_rate": 0.895,
+  "left_path_pct": 52,
+  "right_path_pct": 48,
+  "true_return_mean": -363.07972048265333,
+  "true_return_std": 257.1982590948425,
+  "upright_success_rate": 1.0,
+  "time_to_upright_mean": 27.55,
+  "cost_vs_forecast_err_corr": 0.4092374758180498,
+  "penalizes_region": null,
+  "run_id": "ens_E2_p0.2_seed1_fast",
+  "method": "ens",
+  "env": "E2",
+  "seed": 1,
+  "wall_clock_train_s": 222.1,
+  "peak_mem_mb": 352.3,
+  "n_models": 5,
+  "fits_local": true,
+  "hparam": {
+    "knob": "p",
+    "value": 0.2
+  },
+  "p": 0.2
+}

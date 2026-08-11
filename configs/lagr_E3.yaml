@@ -1,0 +1,35 @@
+# Maram/Theresa 3 on E3 (decisive env, per spec §4): learned Lagrange multiplier
+# alpha vs a wider/shifted danger zone than E1. The auto-tuning claim: alpha should
+# find a good weight for THIS zone's geometry without anyone hand-picking p for it,
+# unlike baseline_E3 which just reuses E1's p values.
+method: lagr
+env:
+  id: E3
+  offline_dataset: data/E3_offline.parquet
+  excluded_zone: [0.7853981633974483, 2.356194490192345]   # [pi/4, 3pi/4] -- same as baseline_E3
+transition_model:
+  type: lstm
+  frozen_checkpoint: null
+  obs_dim: 3
+  act_dim: 1
+cost_signal:
+  type: kde_density            # same cost signal as baseline -> isolates the weighting axis
+  bandwidth: 0.1
+  ref_percentile: 5.0
+weight:
+  type: lagrangian
+  constraint: zone             # see lagr_E1.yaml for why zone (not cost) is the sane scale here
+  epsilon: 0.02                # sweep {0.02, 0.05}
+  eta_alpha: 0.1
+  alpha_init: 1.0
+  alpha_max: null
+  update_freq: 500
+agent:
+  algo: sac
+  total_steps: 150000
+eval:
+  episodes: 2000
+  max_steps: 200
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000

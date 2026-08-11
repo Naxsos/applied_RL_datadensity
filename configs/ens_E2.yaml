@@ -1,0 +1,26 @@
+# Gerrit/Jonas 1a: ensemble variance cost + fixed weight. Decisive env = E2.
+method: ens
+env:
+  id: E2
+  offline_dataset: data/E2_offline.parquet
+transition_model:
+  type: ensemble
+  frozen_checkpoint: models/E2_ensemble.pt   # from scripts/train_transition.py --kind ensemble
+  n_models: 5
+  obs_dim: 3
+  act_dim: 1
+cost_signal:
+  type: ensemble_variance
+  agg: mean
+weight:
+  type: fixed
+  p: 0.6                       # sweep {0.2, 0.6, 1.0}
+agent:
+  algo: sac
+  total_steps: 150000
+eval:
+  episodes: 2000
+  max_steps: 200
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000

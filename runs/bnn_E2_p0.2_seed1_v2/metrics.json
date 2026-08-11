@@ -1,0 +1,24 @@
+{
+  "zone_visit_rate": 0.858,
+  "left_path_pct": 52,
+  "right_path_pct": 48,
+  "true_return_mean": -354.92559013247904,
+  "true_return_std": 264.6767792618018,
+  "upright_success_rate": 1.0,
+  "time_to_upright_mean": 26.992,
+  "cost_vs_forecast_err_corr": 0.05434103865368271,
+  "penalizes_region": null,
+  "run_id": "bnn_E2_p0.2_seed1_v2",
+  "method": "bnn",
+  "env": "E2",
+  "seed": 1,
+  "wall_clock_train_s": 923.8,
+  "peak_mem_mb": 350.9,
+  "n_models": 1,
+  "fits_local": true,
+  "hparam": {
+    "knob": "p",
+    "value": 0.2
+  },
+  "p": 0.2
+}

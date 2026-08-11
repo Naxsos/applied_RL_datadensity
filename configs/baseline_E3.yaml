@@ -1,0 +1,30 @@
+# Paper baseline on E3: same KDE density + fixed penalty p, but a wider/shifted
+# danger zone than E1 (see denrl/env.py E3_ZONE... actually defined in
+# scripts/generate_offline_data.py::E3_ZONE and mirrored below).
+# Tests whether a p tuned for E1's zone geometry stays safe on a different one.
+method: baseline
+env:
+  id: E3
+  offline_dataset: data/E3_offline.parquet
+  excluded_zone: [0.7853981633974483, 2.356194490192345]   # [pi/4, 3pi/4] -- wider than E1's [2pi/5, 3pi/5]
+transition_model:
+  type: lstm
+  frozen_checkpoint: null      # null -> physics fallback (runs before LSTM is trained)
+  obs_dim: 3
+  act_dim: 1
+cost_signal:
+  type: kde_density
+  bandwidth: 0.1               # paper value
+  ref_percentile: 5.0
+weight:
+  type: fixed
+  p: 10.0                      # sweep {2, 10, 30} -- same values as E1, deliberately not retuned
+agent:
+  algo: sac
+  total_steps: 150000
+eval:
+  episodes: 2000
+  max_steps: 200
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000   # set to YOUR machine

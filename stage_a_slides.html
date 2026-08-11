@@ -1,0 +1,653 @@
+<title>Safety-Penalty Method Comparison — Stage A</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ground:      #f4f5f3;
+    --surface:     #ffffff;
+    --surface-2:   #eef0ee;
+    --ink:         #14181d;
+    --ink-soft:    #4b5561;
+    --ink-muted:   #7c8590;
+    --line:        #dadde0;
+    --line-strong: #c3c8cc;
+    --accent:      #184f95;
+    --accent-soft: #e3ebf5;
+    --good:        #0ca30c;
+    --good-soft:   #e3f5e3;
+
+    --m-baseline: #2a78d6;
+    --m-ens:      #eb6834;
+    --m-bnn:      #1baf7a;
+    --m-lagr:     #eda100;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", "Cascadia Code", "Consolas", "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground:      #0d0f12;
+      --surface:     #15181c;
+      --surface-2:   #1b1f24;
+      --ink:         #e8eaed;
+      --ink-soft:    #a8b0b9;
+      --ink-muted:   #7c8590;
+      --line:        #2a2f35;
+      --line-strong: #383f47;
+      --accent:      #5b9bdb;
+      --accent-soft: #17263a;
+      --good:        #0ca30c;
+      --good-soft:   #103410;
+
+      --m-baseline: #3987e5;
+      --m-ens:      #d95926;
+      --m-bnn:      #199e70;
+      --m-lagr:     #c98500;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground:      #0d0f12;
+    --surface:     #15181c;
+    --surface-2:   #1b1f24;
+    --ink:         #e8eaed;
+    --ink-soft:    #a8b0b9;
+    --ink-muted:   #7c8590;
+    --line:        #2a2f35;
+    --line-strong: #383f47;
+    --accent:      #5b9bdb;
+    --accent-soft: #17263a;
+    --good:        #0ca30c;
+    --good-soft:   #103410;
+
+    --m-baseline: #3987e5;
+    --m-ens:      #d95926;
+    --m-bnn:      #199e70;
+    --m-lagr:     #c98500;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    margin: 0;
+  }
+  body { -webkit-font-smoothing: antialiased; }
+
+  .deck {
+    scroll-snap-type: y proximity;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  .slide {
+    scroll-snap-align: start;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(28px, 5vw, 72px) clamp(20px, 7vw, 96px);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .slide:last-of-type { border-bottom: none; }
+
+  .kicker {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: clamp(20px, 4vw, 40px);
+  }
+  .kicker .num { font-variant-numeric: tabular-nums; }
+
+  h1, h2, h3 {
+    font-family: var(--serif);
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--ink);
+  }
+  h2 { font-size: clamp(26px, 3.4vw, 38px); line-height: 1.15; letter-spacing: -0.01em; }
+  h3 { font-size: 17px; font-weight: 600; color: var(--ink-soft); margin-bottom: 14px; }
+
+  p { line-height: 1.6; color: var(--ink-soft); max-width: 62ch; }
+  .lede { font-size: clamp(16px, 1.6vw, 19px); color: var(--ink-soft); max-width: 58ch; }
+
+  .body-col { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; }
+
+  code, .mono { font-family: var(--mono); }
+
+  /* ---------- title slide ---------- */
+  .title-slide { justify-content: center; }
+  .title-slide .eyebrow {
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 18px;
+  }
+  .title-slide h1 {
+    font-size: clamp(34px, 5.4vw, 60px); line-height: 1.08; letter-spacing: -0.015em; max-width: 16ch;
+  }
+  .title-slide .sub { font-size: clamp(16px, 1.9vw, 21px); color: var(--ink-soft); max-width: 46ch; margin-top: 18px; }
+  .meta-row {
+    display: flex; gap: 32px; margin-top: 48px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 13px; color: var(--ink-muted);
+  }
+  .meta-row div span { display: block; color: var(--ink-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+  .meta-row div strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- reward equation ---------- */
+  .equation {
+    font-family: var(--mono);
+    font-size: clamp(14px, 1.6vw, 18px);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 22px 26px;
+    color: var(--ink);
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: baseline;
+    width: fit-content;
+  }
+  .equation .tag {
+    display: block;
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+  .eq-term { display: flex; flex-direction: column; align-items: center; }
+  .eq-term .tag.axis1 { color: var(--m-ens); }
+  .eq-term .tag.axis2 { color: var(--accent); }
+  .eq-term .tag.clean { color: var(--ink-muted); }
+
+  /* ---------- 2x2 grid ---------- */
+  .grid2x2 {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 900px;
+  }
+  .grid2x2 .cell { background: var(--surface); padding: 18px 20px; }
+  .grid2x2 .axis-label {
+    background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-muted); text-align: center; padding: 10px;
+  }
+  .grid2x2 .corner { background: var(--surface-2); }
+  .method-cell h4 {
+    font-family: var(--sans); font-weight: 700; font-size: 15px; margin: 0 0 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .method-cell .swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  .method-cell p { font-size: 13.5px; margin: 0 0 6px; max-width: none; }
+  .method-cell .owner { font-family: var(--mono); font-size: 11px; color: var(--ink-muted); }
+  .method-cell.winner { background: var(--accent-soft); }
+
+  /* ---------- setup strip ---------- */
+  .setup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 980px;
+  }
+  .setup-grid .item { background: var(--surface); padding: 18px 20px; }
+  .setup-grid .item .k { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); margin-bottom: 8px; }
+  .setup-grid .item .v { font-size: 14.5px; color: var(--ink); line-height: 1.45; }
+  .setup-grid .item .v strong { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; max-width: 100%; }
+  table.data {
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 560px;
+  }
+  table.data th, table.data td {
+    text-align: right;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+    font-family: var(--mono);
+  }
+  table.data th { font-family: var(--sans); text-align: right; color: var(--ink-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; border-bottom: 1px solid var(--line-strong); }
+  table.data th:first-child, table.data td:first-child { text-align: left; font-family: var(--sans); }
+  table.data td.method { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  table.data tr.winner td { background: var(--accent-soft); }
+  .row-swatch { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .badge-good {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: var(--good-soft); color: var(--good);
+    font-family: var(--sans); font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em;
+    padding: 2px 7px; border-radius: 20px; text-transform: uppercase;
+    margin-left: 8px;
+  }
+
+  /* ---------- charts ---------- */
+  .chart-block { margin-top: 6px; }
+  .chart-title { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 14px; font-weight: 600; }
+  .chart-title .dir { color: var(--ink-muted); font-weight: 400; }
+
+  .hbar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; position: relative; }
+  .hbar-row .lbl { width: 84px; flex: none; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+  .hbar-row .lbl .row-swatch { width: 9px; height: 9px; border-radius: 2px; }
+  .hbar-track { flex: 1; height: 20px; background: var(--surface-2); border-radius: 4px; position: relative; }
+  .hbar-fill {
+    height: 20px; border-radius: 4px 4px 4px 4px; position: absolute; left: 0; top: 0;
+    transition: filter .15s ease;
+  }
+  .hbar-fill:hover, .hbar-fill:focus-visible { filter: brightness(1.08); outline: none; }
+  .hbar-val { position: absolute; top: 0; height: 20px; display: flex; align-items: center; font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+
+  .vgroup { display: flex; gap: clamp(20px, 3vw, 40px); flex-wrap: wrap; }
+  .vchart { flex: 1; min-width: 220px; }
+  .vbars { display: flex; align-items: flex-end; gap: 14px; height: 150px; border-bottom: 1px solid var(--line-strong); padding: 0 4px; }
+  .vbar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; max-width: 46px; }
+  .vbar-val { font-family: var(--mono); font-size: 11.5px; color: var(--ink); margin-bottom: 6px; font-weight: 600; white-space: nowrap; }
+  .vbar { width: 100%; max-width: 24px; border-radius: 4px 4px 0 0; transition: filter .15s ease; }
+  .vbar:hover, .vbar:focus-visible { filter: brightness(1.08); outline: none; }
+  .vbar-lbl { font-size: 11px; color: var(--ink-muted); margin-top: 8px; text-align: center; }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 16px; font-size: 12px; color: var(--ink-soft); }
+  .legend .li { display: flex; align-items: center; gap: 6px; }
+  .legend .sw { width: 9px; height: 9px; border-radius: 2px; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 50;
+    background: var(--ink); color: var(--ground);
+    font-family: var(--mono); font-size: 12px;
+    padding: 6px 10px; border-radius: 5px;
+    opacity: 0; transform: translate(-50%, -8px);
+    transition: opacity .1s ease;
+    white-space: nowrap;
+  }
+  .tooltip.show { opacity: 1; }
+
+  /* ---------- callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 20px;
+    max-width: 640px;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .callout strong { color: var(--ink); }
+  .callout.warn { border-left-color: var(--m-lagr); }
+
+  .two-col { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(24px, 4vw, 56px); align-items: start; }
+  @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
+  .finding-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; max-width: 620px; }
+  .finding-list li { display: flex; gap: 14px; }
+  .finding-list .n { font-family: var(--mono); font-size: 12px; color: var(--accent); flex: none; padding-top: 3px; }
+  .finding-list .t { font-size: 14.5px; color: var(--ink-soft); line-height: 1.55; }
+  .finding-list .t strong { color: var(--ink); }
+
+  /* ---------- recommendation slide ---------- */
+  .verdict-box {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: clamp(22px, 3vw, 34px) clamp(24px, 3.4vw, 40px);
+    max-width: 720px;
+  }
+  .verdict-box .label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 10px; }
+  .verdict-box h3.method-name {
+    font-family: var(--serif); font-size: clamp(28px, 3.4vw, 40px); color: var(--ink); margin: 0 0 10px;
+  }
+  .verdict-box p { color: var(--ink-soft); max-width: none; margin: 0; font-size: 15px; }
+
+  .caveat-strip { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 28px; }
+  .caveat-strip .c { flex: 1; min-width: 200px; }
+  .caveat-strip .c .h { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); margin-bottom: 6px; }
+  .caveat-strip .c .b { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; }
+
+  @media print {
+    .deck { height: auto; overflow: visible; }
+    .slide { min-height: 0; page-break-after: always; border-bottom: none; }
+  }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1. TITLE -->
+  <section class="slide title-slide">
+    <div class="kicker"><span>Stage A · Pilot Comparison</span><span class="num">01 / 08</span></div>
+    <div class="eyebrow">Density/Uncertainty-Guided Safe RL</div>
+    <h1>Choosing a safety&#8209;penalty method for offline RL</h1>
+    <p class="sub">Three candidate mechanisms, benchmarked against the ES2025&#8209;194 paper baseline on one identical footing — which one do we carry into the full benchmark?</p>
+    <div class="meta-row">
+      <div><span>Task</span><strong>Pendulum swing-up, excluded danger zone</strong></div>
+      <div><span>Methods</span><strong>baseline · ens · bnn · lagr</strong></div>
+      <div><span>Scope</span><strong>Stage A — decision pilot</strong></div>
+    </div>
+  </section>
+
+  <!-- 2. THE MECHANISM -->
+  <section class="slide">
+    <div class="kicker"><span>Context</span><span class="num">02 / 08</span></div>
+    <div class="body-col">
+      <h2>Every method penalizes the same reward, two knobs apart</h2>
+      <p class="lede">Each candidate plugs into one identical wrapper: subtract a risk penalty from the clean task reward. The two knobs — <em>what</em> counts as risky, and <em>how hard</em> to penalize it — are what actually differ between methods.</p>
+      <div class="equation">
+        <div class="eq-term"><span>reward(s,a)</span><span class="tag clean">clean, unpenalized</span></div>
+        <span>&minus;</span>
+        <div class="eq-term"><span>weight(cost)</span><span class="tag axis2">axis 2 — how much</span></div>
+        <span>&middot;</span>
+        <div class="eq-term"><span>cost(s,a)</span><span class="tag axis1">axis 1 — what</span></div>
+      </div>
+      <p style="font-size:13.5px; max-width:640px;">Because the two axes are independent, this pilot answers two questions at once: <strong style="color:var(--ink)">is an uncertainty signal a better risk detector than density?</strong> and <strong style="color:var(--ink)">does auto-tuning the weight beat hand-picking it?</strong></p>
+    </div>
+  </section>
+
+  <!-- 3. THREE APPROACHES -->
+  <section class="slide">
+    <div class="kicker"><span>The candidates</span><span class="num">03 / 08</span></div>
+    <h2 style="margin-bottom:26px;">Three approaches, one paper baseline</h2>
+    <div class="grid2x2">
+      <div class="cell corner"></div>
+      <div class="cell axis-label">Fixed weight (hand-picked)</div>
+      <div class="cell axis-label">Auto-tuned weight (Lagrangian)</div>
+
+      <div class="cell axis-label">Density signal<br>(KDE)</div>
+      <div class="cell method-cell">
+        <h4><span class="swatch" style="background:var(--m-baseline)"></span>baseline</h4>
+        <p>The paper's own method. Penalizes states rarely seen in the offline data. Reproduces Table&nbsp;1.</p>
+        <div class="owner">ES2025-194</div>
+      </div>
+      <div class="cell method-cell">
+        <h4><span class="swatch" style="background:var(--m-lagr)"></span>lagr</h4>
+        <p>Same density signal as baseline, but the weight (&alpha;) is learned by dual ascent to hit a target safety constraint — no hand-tuning.</p>
+        <div class="owner">Maram / Theresa</div>
+      </div>
+
+      <div class="cell axis-label">Uncertainty signal<br>(model disagreement)</div>
+      <div class="cell method-cell">
+        <h4><span class="swatch" style="background:var(--m-ens)"></span>ens</h4>
+        <p>Trains 5 transition models; penalizes states where they <em>disagree</em> on what happens next, not just where data is sparse.</p>
+        <div class="owner">Gerrit / Jonas</div>
+      </div>
+      <div class="cell method-cell">
+        <h4><span class="swatch" style="background:var(--m-bnn)"></span>bnn</h4>
+        <p>Same disagreement idea as ens, from one Bayesian net's own uncertainty — aiming for the same signal at ~1&times; the compute.</p>
+        <div class="owner">Gerrit / Jonas</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. SETUP -->
+  <section class="slide">
+    <div class="kicker"><span>Method</span><span class="num">04 / 08</span></div>
+    <h2 style="margin-bottom:26px;">Pilot setup</h2>
+    <div class="setup-grid">
+      <div class="item"><div class="k">Environments</div><div class="v">E1 paper zone &middot; E2 uncertainty&ne;density testbed &middot; E3 shifted zone</div></div>
+      <div class="item"><div class="k">Seeds</div><div class="v"><strong>2</strong> per cell (spec calls for &ge;5 — see caveats)</div></div>
+      <div class="item"><div class="k">Training</div><div class="v"><strong>150,000</strong> SAC steps, full length</div></div>
+      <div class="item"><div class="k">Evaluation</div><div class="v"><strong>500</strong> episodes, clean reward only</div></div>
+      <div class="item"><div class="k">Knob sweep</div><div class="v">Every method's own knob swept in full (p / weight / &epsilon;)</div></div>
+      <div class="item"><div class="k">Scoring</div><div class="v">Weighted rubric: safety 30% &middot; return 25% &middot; robustness 20% &middot; compute 15% &middot; signal 10%</div></div>
+    </div>
+    <p style="margin-top:22px; font-size:13px;">32 runs total across all methods &times; environments &times; knob values &times; seeds, on one identical eval loop and logger.</p>
+  </section>
+
+  <!-- 5. RESULTS: DECISION TABLE -->
+  <section class="slide">
+    <div class="kicker"><span>Results</span><span class="num">05 / 08</span></div>
+    <h2 style="margin-bottom:8px;">lagr wins the weighted decision table</h2>
+    <p class="lede" style="margin-bottom:28px;">Averaged across environments, knob values, and both seeds.</p>
+    <div class="two-col">
+      <div>
+        <div class="table-wrap">
+          <table class="data" id="decision-table"></table>
+        </div>
+      </div>
+      <div>
+        <div class="chart-title">Weighted total <span class="dir">(higher is better)</span></div>
+        <div id="chart-weighted"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. RESULTS: DEEPER LOOK -->
+  <section class="slide">
+    <div class="kicker"><span>Results</span><span class="num">06 / 08</span></div>
+    <h2 style="margin-bottom:30px;">What's driving the difference</h2>
+    <div class="vgroup" id="small-multiples"></div>
+    <div class="legend" id="mm-legend"></div>
+    <div class="two-col" style="margin-top:38px; align-items:center;">
+      <div class="callout">
+        <strong>Side finding, E2 (uncertainty &ne; density testbed):</strong> ens's signal actually tracks true model error — bnn's barely does.
+      </div>
+      <div>
+        <div class="chart-title">Signal &harr; forecast-error correlation <span class="dir">(higher is better, E2 only)</span></div>
+        <div id="chart-e2corr"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. STRESS TEST -->
+  <section class="slide">
+    <div class="kicker"><span>Follow-up check</span><span class="num">07 / 08</span></div>
+    <h2 style="margin-bottom:6px;">Does lagr scale to aggressive safety?</h2>
+    <p class="lede" style="margin-bottom:30px;">baseline's toughest setting (p=30) crushes zone-visits — does raising lagr's target do the same?</p>
+    <div class="two-col">
+      <div>
+        <div class="chart-title">baseline: zone-visit rate across its own sweep <span class="dir">(lower is better)</span></div>
+        <div id="chart-threshold"></div>
+        <p style="font-size:13px; margin-top:16px; max-width:420px;">p=2 and p=10 barely differ from each other — only p=30 crosses into genuinely different behavior. A weight <em>threshold</em>, not a smooth curve.</p>
+      </div>
+      <div>
+        <div class="table-wrap">
+          <table class="data" id="stress-table"></table>
+        </div>
+        <ul class="finding-list" style="margin-top:22px;">
+          <li><span class="n">→</span><span class="t">Tightening lagr's target (&epsilon;: 0.02 &rarr; 0.004) barely moved &alpha; (1.28 &rarr; 1.75) and safety stayed flat.</span></li>
+          <li><span class="n">→</span><span class="t">Raising the dual-ascent rate 10&times; got &alpha; to <strong>7.9</strong> — <em>still climbing</em> at run's end — but zone-visit rate still didn't move.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. RECOMMENDATION -->
+  <section class="slide">
+    <div class="kicker"><span>Recommendation</span><span class="num">08 / 08</span></div>
+    <h2 style="margin-bottom:26px;">Carry lagr into the full benchmark</h2>
+    <div class="verdict-box">
+      <div class="label">Stage A winner</div>
+      <h3 class="method-name"><span class="swatch" style="background:var(--m-lagr); width:16px; height:16px; display:inline-block; border-radius:3px; margin-right:10px; vertical-align:-2px;"></span>lagr</h3>
+      <p>Matches baseline's safety in the everyday (p=2&ndash;10) regime while returning ~3&times; better task performance, and is dramatically more robust to its own tuning — it doesn't need per-environment retuning the way a fixed weight does.</p>
+    </div>
+    <div class="caveat-strip">
+      <div class="c"><div class="h">What it's proven</div><div class="b">Best safety/return trade-off <em>and</em> best robustness of all four methods, across E1/E2/E3.</div></div>
+      <div class="c"><div class="h">What's untested</div><div class="b">Whether &alpha; can reach baseline p=30-level aggressive safety given more runway — it was still rising, not stalled.</div></div>
+      <div class="c"><div class="h">Pilot caveats</div><div class="b">2 seeds, not the spec's 5 — treat as a strong signal, not a final number.</div></div>
+      <div class="c"><div class="h">Next step</div><div class="b">Stage B: full 5-seed benchmark of lagr against the paper's reported numbers.</div></div>
+    </div>
+  </section>
+
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function () {
+  const METHOD_COLOR = { baseline: 'var(--m-baseline)', ens: 'var(--m-ens)', bnn: 'var(--m-bnn)', lagr: 'var(--m-lagr)' };
+  const METHOD_LABEL = { baseline: 'baseline', ens: 'ens', bnn: 'bnn', lagr: 'lagr' };
+  const tooltip = document.getElementById('tooltip');
+
+  function showTip(e, text) {
+    tooltip.textContent = text;
+    tooltip.classList.add('show');
+    moveTip(e);
+  }
+  function moveTip(e) {
+    tooltip.style.left = e.clientX + 'px';
+    tooltip.style.top = (e.clientY - 14) + 'px';
+  }
+  function hideTip() { tooltip.classList.remove('show'); }
+
+  function bindTip(el, text) {
+    el.addEventListener('mousemove', (e) => showTip(e, text));
+    el.addEventListener('mouseleave', hideTip);
+    el.addEventListener('focus', (e) => showTip(e, text));
+    el.addEventListener('blur', hideTip);
+  }
+
+  // ---------- decision table ----------
+  const decisionRows = [
+    { method: 'lagr',     zone: 0.878, ret: -146.6, rob: 0.999, total: 0.594, winner: true },
+    { method: 'baseline', zone: 0.765, ret: -400.8, rob: 0.000, total: 0.439 },
+    { method: 'ens',      zone: 0.886, ret: -411.0, rob: 0.876, total: 0.355 },
+    { method: 'bnn',      zone: 0.882, ret: -415.5, rob: 0.928, total: 0.271 },
+  ];
+  const dt = document.getElementById('decision-table');
+  dt.innerHTML = `
+    <thead><tr>
+      <th>Method</th><th>Zone-visit &darr;</th><th>Return &uarr;</th><th>Robustness &uarr;</th><th>Weighted total</th>
+    </tr></thead>
+    <tbody>
+      ${decisionRows.map(r => `
+        <tr class="${r.winner ? 'winner' : ''}">
+          <td class="method"><span class="row-swatch" style="background:${METHOD_COLOR[r.method]}"></span>${METHOD_LABEL[r.method]}${r.winner ? '<span class="badge-good">Winner</span>' : ''}</td>
+          <td>${r.zone.toFixed(3)}</td>
+          <td>${r.ret.toFixed(1)}</td>
+          <td>${r.rob.toFixed(3)}</td>
+          <td>${r.total.toFixed(3)}</td>
+        </tr>`).join('')}
+    </tbody>`;
+
+  // ---------- horizontal bar: weighted total ----------
+  function hbarChart(container, rows, valueKey, fmt) {
+    const max = Math.max(...rows.map(r => r[valueKey]));
+    container.innerHTML = '';
+    rows.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'hbar-row';
+      const pct = (r[valueKey] / max) * 100;
+      row.innerHTML = `
+        <div class="lbl"><span class="row-swatch" style="background:${METHOD_COLOR[r.method]}"></span>${METHOD_LABEL[r.method]}</div>
+        <div class="hbar-track">
+          <div class="hbar-fill" tabindex="0" style="width:${pct}%; background:${METHOD_COLOR[r.method]};"></div>
+          <div class="hbar-val" style="left:calc(${pct}% + 10px);">${fmt(r[valueKey])}</div>
+        </div>`;
+      container.appendChild(row);
+      const fill = row.querySelector('.hbar-fill');
+      bindTip(fill, `${METHOD_LABEL[r.method]} — ${fmt(r[valueKey])}`);
+    });
+  }
+  hbarChart(document.getElementById('chart-weighted'), decisionRows, 'total', v => v.toFixed(3));
+
+  // ---------- small multiples ----------
+  const mmOrder = ['baseline', 'ens', 'bnn', 'lagr'];
+  const mmData = {
+    'Zone-visit rate': { dir: 'lower is better', unit: v => v.toFixed(2), values: { baseline: 0.765, ens: 0.886, bnn: 0.882, lagr: 0.878 } },
+    'Task deviation |return|': { dir: 'lower is better', unit: v => Math.round(v), values: { baseline: 400.8, ens: 411.0, bnn: 415.5, lagr: 146.6 } },
+    'Robustness score': { dir: 'higher is better', unit: v => v.toFixed(2), values: { baseline: 0.000, ens: 0.876, bnn: 0.928, lagr: 0.999 } },
+  };
+  const mmWrap = document.getElementById('small-multiples');
+  Object.entries(mmData).forEach(([title, spec]) => {
+    const max = Math.max(...Object.values(spec.values));
+    const col = document.createElement('div');
+    col.className = 'vchart';
+    col.innerHTML = `<div class="chart-title">${title} <span class="dir">(${spec.dir})</span></div>`;
+    const bars = document.createElement('div');
+    bars.className = 'vbars';
+    mmOrder.forEach(m => {
+      const v = spec.values[m];
+      const h = Math.max((v / max) * 100, 3);
+      const colEl = document.createElement('div');
+      colEl.className = 'vbar-col';
+      colEl.innerHTML = `
+        <div class="vbar-val">${spec.unit(v)}</div>
+        <div class="vbar" tabindex="0" style="height:${h}%; background:${METHOD_COLOR[m]};"></div>
+        <div class="vbar-lbl">${METHOD_LABEL[m]}</div>`;
+      bars.appendChild(colEl);
+      bindTip(colEl.querySelector('.vbar'), `${METHOD_LABEL[m]} — ${spec.unit(v)}`);
+    });
+    col.appendChild(bars);
+    mmWrap.appendChild(col);
+  });
+  const mmLegend = document.getElementById('mm-legend');
+  mmLegend.innerHTML = mmOrder.map(m => `<div class="li"><span class="sw" style="background:${METHOD_COLOR[m]}"></span>${METHOD_LABEL[m]}</div>`).join('');
+
+  // ---------- E2 correlation (2 series only) ----------
+  const e2Rows = [
+    { method: 'ens', val: 0.409 },
+    { method: 'bnn', val: 0.054 },
+  ];
+  const e2Wrap = document.getElementById('chart-e2corr');
+  (function () {
+    const max = 0.5;
+    e2Wrap.innerHTML = '';
+    e2Rows.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'hbar-row';
+      const pct = (r.val / max) * 100;
+      row.innerHTML = `
+        <div class="lbl"><span class="row-swatch" style="background:${METHOD_COLOR[r.method]}"></span>${METHOD_LABEL[r.method]}</div>
+        <div class="hbar-track">
+          <div class="hbar-fill" tabindex="0" style="width:${pct}%; background:${METHOD_COLOR[r.method]};"></div>
+          <div class="hbar-val" style="left:calc(${pct}% + 10px);">${r.val.toFixed(3)}</div>
+        </div>`;
+      e2Wrap.appendChild(row);
+      bindTip(row.querySelector('.hbar-fill'), `${METHOD_LABEL[r.method]} — ${r.val.toFixed(3)} correlation`);
+    });
+  })();
+
+  // ---------- threshold chart (baseline sweep) ----------
+  const threshRows = [
+    { label: 'p = 2', val: 0.878 },
+    { label: 'p = 10', val: 0.878 },
+    { label: 'p = 30', val: 0.470 },
+  ];
+  (function () {
+    const wrap = document.getElementById('chart-threshold');
+    const max = 1.0;
+    const bars = document.createElement('div');
+    bars.className = 'vbars';
+    bars.style.maxWidth = '340px';
+    threshRows.forEach(r => {
+      const h = Math.max((r.val / max) * 100, 3);
+      const colEl = document.createElement('div');
+      colEl.className = 'vbar-col';
+      colEl.innerHTML = `
+        <div class="vbar-val">${r.val.toFixed(2)}</div>
+        <div class="vbar" tabindex="0" style="height:${h}%; background:var(--m-baseline); max-width:40px;"></div>
+        <div class="vbar-lbl">${r.label}</div>`;
+      bars.appendChild(colEl);
+      bindTip(colEl.querySelector('.vbar'), `baseline ${r.label} — zone-visit ${r.val.toFixed(2)}`);
+    });
+    wrap.appendChild(bars);
+  })();
+
+  // ---------- stress test table ----------
+  const stressRows = [
+    { label: 'baseline p=30', alpha: '—', zone: '0.470', ret: '-1134.0' },
+    { label: 'lagr &epsilon;=0.004 (&eta;=0.1)', alpha: '1.75', zone: '0.879', ret: '-147.4' },
+    { label: 'lagr &epsilon;=0.004 (&eta;=1.0)', alpha: '7.91&uarr;', zone: '0.878', ret: '-149.2' },
+  ];
+  document.getElementById('stress-table').innerHTML = `
+    <thead><tr><th>Config</th><th>&alpha;</th><th>Zone-visit</th><th>Return</th></tr></thead>
+    <tbody>
+      ${stressRows.map(r => `<tr><td>${r.label}</td><td>${r.alpha}</td><td>${r.zone}</td><td>${r.ret}</td></tr>`).join('')}
+    </tbody>`;
+})();
+</script>

@@ -1,0 +1,40 @@
+# Maram/Theresa 3: learned Lagrange multiplier α. Decisive env = E3 (unknown/shifting p).
+method: lagr
+env:
+  id: E1                       # also run on E3
+  offline_dataset: data/E1_offline.parquet
+transition_model:
+  type: lstm
+  frozen_checkpoint: null
+  obs_dim: 3
+  act_dim: 1
+cost_signal:
+  type: kde_density            # same cost signal as baseline -> isolates the weighting axis
+  bandwidth: 0.1
+  ref_percentile: 5.0
+weight:
+  type: lagrangian
+  constraint: zone             # ε bounds the ZONE-VISIT RATE, not the mean cost.
+                               # (KDE cost is nonzero nearly everywhere -> mean cost
+                               #  sits ~0.7, so ε=0.02 on that scale is unsatisfiable
+                               #  and α just ratchets. Use constraint: cost only with
+                               #  an ε on the cost scale, O(0.1-1).)
+  epsilon: 0.02                # allowed zone-violation rate, PER TRAINING STEP
+                               # (sweep {0.02, 0.05}). Not a bound on the reported
+                               # per-episode zone_visit_rate, which runs higher.
+  eta_alpha: 0.1               # α must be able to reach the baseline's p~10 within
+                               # the run: 150k steps / update_freq 500 = 300 dual
+                               # steps, so η·Σ(C−ε) ≈ 0.1·300·0.3 ≈ 9. η=0.01 with
+                               # update_freq 1000 moved α by ~1 total = fixed weight.
+  alpha_init: 1.0
+  alpha_max: null
+  update_freq: 500             # dual step every N env steps
+agent:
+  algo: sac
+  total_steps: 150000
+eval:
+  episodes: 2000
+  max_steps: 200
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000

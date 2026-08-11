@@ -1,0 +1,36 @@
+# Same as lagr_E1.yaml but with epsilon tightened to be a comparably hard
+# constraint as baseline's toughest sweep point (p=30, ~0.45-0.59 per-episode
+# zone_visit_rate). epsilon is a PER-STEP target; over a 200-step episode,
+# (1-0.004)^200 ~= 0.45 chance of never entering the zone -- matches baseline's
+# p=30 ballpark. Tests whether lagr can reach that same real safety level while
+# still beating baseline on return, which is the actual claim worth checking.
+method: lagr
+env:
+  id: E1
+  offline_dataset: data/E1_offline.parquet
+transition_model:
+  type: lstm
+  frozen_checkpoint: null
+  obs_dim: 3
+  act_dim: 1
+cost_signal:
+  type: kde_density
+  bandwidth: 0.1
+  ref_percentile: 5.0
+weight:
+  type: lagrangian
+  constraint: zone
+  epsilon: 0.004
+  eta_alpha: 0.1
+  alpha_init: 1.0
+  alpha_max: null
+  update_freq: 500
+agent:
+  algo: sac
+  total_steps: 150000
+eval:
+  episodes: 2000
+  max_steps: 200
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000

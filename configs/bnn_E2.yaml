@@ -1,0 +1,27 @@
+# Gerrit/Jonas 1b: MC-dropout uncertainty cost (~1x cost of the ensemble).
+method: bnn
+env:
+  id: E2
+  offline_dataset: data/E2_offline.parquet
+transition_model:
+  type: bnn
+  frozen_checkpoint: models/E2_bnn.pt        # from scripts/train_transition.py --kind bnn
+  mc_samples: 10
+  dropout: 0.1
+  obs_dim: 3
+  act_dim: 1
+cost_signal:
+  type: bnn_uncertainty
+  agg: mean
+weight:
+  type: fixed
+  p: 0.6                       # sweep {0.2, 0.6, 1.0}
+agent:
+  algo: sac
+  total_steps: 150000
+eval:
+  episodes: 2000
+  max_steps: 200
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000
