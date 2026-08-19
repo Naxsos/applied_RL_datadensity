@@ -7,11 +7,11 @@ from __future__ import annotations
 from typing import Optional
 import numpy as np
 
-from .env import obs_to_theta, in_zone, ZONE_LOW, ZONE_HIGH
+from .env import obs_to_theta, in_zone, PAPER_ZONE
 
 
 def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 200, seed: int = 0,
-                     zone=(ZONE_LOW, ZONE_HIGH)):
+                     zone=PAPER_ZONE):
     """Roll the policy on the CLEAN (unpenalized) env. Returns per-episode records.
 
     Each record: {return, entered_zone, path, upright, steps_to_upright}.

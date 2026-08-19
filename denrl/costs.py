@@ -39,11 +39,14 @@ class KDEDensityCost(CostSignal):
     cost = 1 - clip(density / density_ref, 0, 1)
     """
 
-    def __init__(self, bandwidth: float = 0.1, ref_percentile: float = 5.0):
+    def __init__(self, bandwidth: float = 0.1, ref_percentile: float = 5.0,
+                 max_fit_points: int = 25_000):
         self.bandwidth = bandwidth
         self.ref_percentile = ref_percentile
+        self.max_fit_points = int(max_fit_points)
         self._kde = None
         self._ref = 1.0
+        self.n_fit_points = 0
 
     @staticmethod
     def _encode(obs):
@@ -53,6 +56,16 @@ class KDEDensityCost(CostSignal):
     def fit(self, dataset):
         from sklearn.neighbors import KernelDensity
         X = self._encode(dataset["obs"])
+        # A KDE query costs O(n_fit), and cost() is called on EVERY env step, so
+        # n_fit sets the run's wall-clock (~9ms/query @ 24k -> ~20min of the 150k
+        # -step run). Capping it keeps that constant when the offline set grows --
+        # the one-sided zone alone took E1 from 24k to 155k transitions, which
+        # would have made every run ~6x slower for a marginally sharper density.
+        # Subsample (seeded) rather than skew the estimate by collecting less data.
+        if len(X) > self.max_fit_points:
+            idx = np.random.default_rng(0).choice(len(X), size=self.max_fit_points, replace=False)
+            X = X[idx]
+        self.n_fit_points = len(X)
         self._kde = KernelDensity(bandwidth=self.bandwidth).fit(X)
         # scoring the reference percentile only needs a representative sample, not
         # all N points -- score_samples(X) over the full offline set is O(N^2)-ish

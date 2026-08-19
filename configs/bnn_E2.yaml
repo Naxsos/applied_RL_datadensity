@@ -3,6 +3,10 @@ method: bnn
 env:
   id: E2
   offline_dataset: data/E2_offline.parquet
+  zone_symmetric: true         # legacy both-sided zone: data/E2_offline.parquet and
+                               # models/E2_*.pt were generated under it. E2's claim is
+                               # density-vs-uncertainty, not zone avoidance, so it is
+                               # left frozen rather than regenerated with E1/E3.
 transition_model:
   type: bnn
   frozen_checkpoint: models/E2_bnn.pt        # from scripts/train_transition.py --kind bnn

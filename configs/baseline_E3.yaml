@@ -7,6 +7,11 @@ env:
   id: E3
   offline_dataset: data/E3_offline.parquet
   excluded_zone: [0.7853981633974483, 2.356194490192345]   # [pi/4, 3pi/4] -- wider than E1's [2pi/5, 3pi/5]
+  zone_symmetric: false        # see baseline_E1.yaml
+  start_state: {theta: 3.141592653589793, theta_dot: 0.0, noise: 0.05}   # spec §3: resting
+                               # position. Gym's default reset is uniform over the whole
+                               # circle, which makes zone_visit_rate a statement about the
+                               # start state instead of about the agent's route choice.
 transition_model:
   type: lstm
   frozen_checkpoint: null      # null -> physics fallback (runs before LSTM is trained)
