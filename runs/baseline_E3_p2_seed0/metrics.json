@@ -1,0 +1,24 @@
+{
+  "zone_visit_rate": 0.875,
+  "left_path_pct": 48,
+  "right_path_pct": 52,
+  "true_return_mean": -143.36776883990058,
+  "true_return_std": 79.06375520858381,
+  "upright_success_rate": 1.0,
+  "time_to_upright_mean": 26.6885,
+  "cost_vs_forecast_err_corr": null,
+  "penalizes_region": null,
+  "run_id": "baseline_E3_p2_seed0",
+  "method": "baseline",
+  "env": "E3",
+  "seed": 0,
+  "wall_clock_train_s": 1239.9,
+  "peak_mem_mb": 454.9,
+  "n_models": 1,
+  "fits_local": true,
+  "hparam": {
+    "knob": "p",
+    "value": 2.0
+  },
+  "p": 2.0
+}

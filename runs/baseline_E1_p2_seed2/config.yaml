@@ -1,0 +1,27 @@
+agent:
+  algo: sac
+  total_steps: 150000
+compute:
+  local_mem_budget_mb: 18000
+cost_signal:
+  bandwidth: 0.1
+  ref_percentile: 5.0
+  type: kde_density
+env:
+  id: E1
+  offline_dataset: data/E1_offline.parquet
+eval:
+  episodes: 2000
+  max_steps: 200
+  reward: clean
+method: baseline
+run_id: baseline_E1_p2_seed2
+transition_model:
+  act_dim: 1
+  frozen_checkpoint: null
+  obs_dim: 3
+  type: lstm
+weight:
+  p: 2.0
+  type: fixed
+seed: 2

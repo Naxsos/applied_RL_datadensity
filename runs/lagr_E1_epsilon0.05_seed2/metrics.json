@@ -1,0 +1,32 @@
+{
+  "zone_visit_rate": 0.876,
+  "left_path_pct": 50,
+  "right_path_pct": 50,
+  "true_return_mean": -148.77427476312383,
+  "true_return_std": 81.67345007143061,
+  "upright_success_rate": 1.0,
+  "time_to_upright_mean": 29.889,
+  "cost_vs_forecast_err_corr": null,
+  "penalizes_region": null,
+  "run_id": "lagr_E1_epsilon0.05_seed2",
+  "method": "lagr",
+  "env": "E1",
+  "seed": 2,
+  "wall_clock_train_s": 824.7,
+  "peak_mem_mb": 439.0,
+  "n_models": 1,
+  "fits_local": true,
+  "hparam": {
+    "knob": "epsilon",
+    "value": 0.05
+  },
+  "alpha": 0.3385999999999987,
+  "epsilon": 0.05,
+  "constraint_signal": "zone",
+  "constraint_C": 0.02,
+  "constraint_C_zone_rate": 0.02,
+  "constraint_C_cost_mean": 0.37199352537062724,
+  "constraint_satisfied": true,
+  "alpha_trajectory_len": 301,
+  "alpha_init": 1.0
+}
