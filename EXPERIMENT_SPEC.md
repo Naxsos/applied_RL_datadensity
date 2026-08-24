@@ -88,6 +88,16 @@ LagrangianWeight(ε, η):    value = α  (current)
 | `E2`   | uncertainty ≠ density testbed (below)                     | ensemble/bnn cost-signal claim  |
 | `E3`   | E1 with unknown/shifted optimal-p                         | lagr auto-tuning claim          |
 
+**Zone sidedness (non-negotiable).** The excluded band lives on **one side** of the swing
+(θ ∈ [lo, hi], not |θ|). The resting state θ=π and the goal θ=0 are separated by the band on
+one side only, so the agent can still reach upright by going around the other way — that detour
+is what `left_path_pct`/`right_path_pct` measure and what makes `zone_visit_rate` a measure of
+avoidance. Mirroring the band onto |θ| blocks *both* routes: avoidance and swing-up become
+mutually exclusive, every method's zone rate collapses onto "did it solve the task at all"
+(measured under the mirrored zone: baseline p=30 scored 0.49 by reaching upright in 6% of
+episodes; lagr scored 0.90 by solving 100%). Set by `env.zone_symmetric`, default `false`.
+E2 alone stays `true` because its frozen dataset and checkpoints predate the fix.
+
 **E2 construction** (the decisive one for the ensemble): produce an offline dataset with two
 contrasting regions —
 - **Region A:** sparse data, *simple* dynamics (low true forecast error).

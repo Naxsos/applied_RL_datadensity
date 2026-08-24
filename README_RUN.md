@@ -32,6 +32,20 @@ python run.py configs/bnn_E2.yaml --seed 0
 bash scripts/run_matrix.sh    # all methods x seeds x knob sweeps, then aggregate
 ```
 
+## One-sided excluded zone (E1/E3)
+The zone blocks one side of the swing only (`env.zone_symmetric: false`), so a swing-up can
+route around it — see EXPERIMENT_SPEC.md §4. Offline data must be regenerated after any change
+to the zone, since episodes terminate on entering it:
+```bash
+python scripts/generate_offline_data.py --env E1     # 155k transitions (one-sided)
+python scripts/generate_offline_data.py --env E3
+bash scripts/run_matrix_zonefix.sh                   # reruns E1/E3 only, _v3 run ids
+```
+Runs made under the old mirrored zone are parked in `runs/_symmetric_zone_legacy/` and the
+datasets in `data/_symmetric_zone_legacy/`; `aggregate.py` only globs top-level run dirs, so
+they are excluded automatically. E2 is deliberately not regenerated (`models/E2_*.pt` were
+trained on the mirrored-zone dataset).
+
 ## What each piece maps to
 | File | Role | Spec |
 |---|---|---|
