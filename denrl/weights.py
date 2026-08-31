@@ -125,14 +125,97 @@ class LagrangianWeight(PenaltyWeight):
 
 
 class WeightUpdateCallback(BaseCallback):
-    """Triggers weight.update() every `update_freq` env steps."""
+    """Triggers weight.update() every `update_freq` env steps and logs alpha.csv."""
 
-    def __init__(self, weight: PenaltyWeight, update_freq: int = 1000, verbose: int = 0):
+    def __init__(self, weight: PenaltyWeight, update_freq: int = 1000,
+                 out_dir: str | None = None, verbose: int = 0):
         super().__init__(verbose)
         self.weight = weight
         self.update_freq = update_freq
+        self.out_dir = out_dir
+        self._csv_path = None
+
+    def _on_training_start(self):
+        if self.out_dir is not None and isinstance(self.weight, LagrangianWeight):
+            from pathlib import Path
+            self._csv_path = Path(self.out_dir) / "alpha.csv"
+            self._csv_path.write_text("step,alpha,constraint_C\n")
 
     def _on_step(self) -> bool:
         if self.n_calls % self.update_freq == 0:
             self.weight.update()
+            if self._csv_path is not None:
+                w = self.weight
+                with open(self._csv_path, "a") as f:
+                    f.write(f"{self.num_timesteps},{w.alpha:.4f},{w.last_constraint or 0:.4f}\n")
         return True
+
+
+class EvalCallback(BaseCallback):
+    """Periodically evaluate on the clean env and log to a CSV."""
+
+    def __init__(self, clean_env, zone, out_dir, eval_freq: int = 10_000,
+                 n_episodes: int = 50, max_steps: int = 200, verbose: int = 0):
+        super().__init__(verbose)
+        self.clean_env = clean_env
+        self.zone = zone
+        self.out_dir = out_dir
+        self.eval_freq = eval_freq
+        self.n_episodes = n_episodes
+        self.max_steps = max_steps
+        self._csv_path = None
+
+    def _on_training_start(self):
+        from pathlib import Path
+        self._csv_path = Path(self.out_dir) / "train_metrics.csv"
+        self._csv_path.write_text(
+            "timestep,true_return_mean,true_return_std,zone_step_frac,zone_steps_mean,"
+            "upright_success_rate,time_to_upright_mean,left_path_pct,right_path_pct\n"
+        )
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.eval_freq == 0:
+            self._evaluate()
+        return True
+
+    def _evaluate(self):
+        from . import metrics
+        records, obs = metrics.evaluate_policy(
+            self.model, self.clean_env,
+            n_episodes=self.n_episodes,
+            max_steps=self.max_steps,
+            seed=self.n_calls,
+            zone=self.zone,
+            collect_obs=True,
+        )
+        summary = metrics.summarize_eval(records)
+        row = (f"{self.num_timesteps},{summary['true_return_mean']:.2f},"
+               f"{summary['true_return_std']:.2f},"
+               f"{summary['zone_step_frac']:.4f},{summary['zone_steps_mean']:.1f},"
+               f"{summary['upright_success_rate']:.4f},{summary['time_to_upright_mean']:.1f},"
+               f"{summary['left_path_pct']},{summary['right_path_pct']}\n")
+        with open(self._csv_path, "a") as f:
+            f.write(row)
+        print(f"  [eval @{self.num_timesteps}] return={summary['true_return_mean']:.1f} "
+              f"zone={summary['zone_step_frac']:.3f} ({summary['zone_steps_mean']:.1f} steps) "
+              f"upright={summary['upright_success_rate']:.2f}")
+        self._plot_trajectories(obs, summary)
+
+    def _plot_trajectories(self, obs, summary):
+        from pathlib import Path
+        from scripts.plot_trajectories import plot_trajectory_snapshot
+        title = (f"step {self.num_timesteps}  zone={summary['zone_step_frac']:.3f}  "
+                 f"return={summary['true_return_mean']:.0f}")
+        plot_trajectory_snapshot(obs, self.zone,
+                                 Path(self.out_dir) / "traj" / f"traj_{self.num_timesteps}.png",
+                                 title=title, method=self._method)
+
+    @property
+    def _method(self):
+        """Best-effort method name from the run config."""
+        from pathlib import Path
+        cfg_path = Path(self.out_dir) / "config.yaml"
+        if cfg_path.exists():
+            import yaml
+            return yaml.safe_load(cfg_path.read_text()).get("method", "baseline")
+        return "baseline"

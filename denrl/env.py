@@ -160,15 +160,15 @@ class FixedStart(gym.Wrapper):
         return np.asarray(self.env.unwrapped._get_obs(), dtype=np.float32), info
 
 
-def make_sim_env(env_cfg: dict, transition_model=None) -> gym.Env:
+def make_sim_env(env_cfg: dict, transition_model=None, render_mode=None) -> gym.Env:
     """Build the env. Dynamics stay real physics unless env.use_model_dynamics is set
     (holding dynamics fixed across methods isolates the cost-signal effect)."""
     env_id = env_cfg.get("id", "E1")
     if env_id in ("E1", "E3"):
-        env = gym.make("Pendulum-v1")
+        env = gym.make("Pendulum-v1", render_mode=render_mode)
     elif env_id == "E2":
         env = ChaoticBandPendulum(
-            gym.make("Pendulum-v1"),
+            gym.make("Pendulum-v1", render_mode=render_mode),
             band=tuple(env_cfg.get("chaotic_band", (-0.6, 0.6))),
             noise=env_cfg.get("chaotic_noise", 0.6),
             seed=env_cfg.get("seed", 0),

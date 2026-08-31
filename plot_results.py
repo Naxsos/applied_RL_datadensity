@@ -78,7 +78,7 @@ def fig_tradeoff(df, out):
         sub = df[df.method == m]
         # mean +/- std over seeds, per knob value
         g = sub.groupby("knob_value").agg(
-            zx=("zone_visit_rate", "mean"), zs=("zone_visit_rate", "std"),
+            zx=("zone_step_frac", "mean"), zs=("zone_step_frac", "std"),
             ry=("true_return_mean", "mean"), rs=("true_return_mean", "std"),
             knob=("knob", "first"),
         ).reset_index()

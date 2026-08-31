@@ -20,6 +20,7 @@ cost_signal:
   type: kde_density
   bandwidth: 0.1               # paper value
   ref_percentile: 5.0
+  threshold: 0.025             # paper: flat penalty when density < threshold
 weight:
   type: fixed
   p: 10.0                      # sweep {2, 10, 30}
@@ -27,7 +28,7 @@ agent:
   algo: sac
   total_steps: 150000
 eval:
-  episodes: 2000
+  episodes: 200
   max_steps: 200
   reward: clean
 compute:

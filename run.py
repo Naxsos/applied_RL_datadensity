@@ -29,21 +29,38 @@ def load_offline(env_cfg: dict) -> dict:
     return {"obs": obs, "act": act, "next_obs": nxt}
 
 
+def _auto_run_id(cfg: dict, seed: int) -> str:
+    w = cfg["weight"]
+    if w["type"] == "fixed":
+        knob = f"p{w['p']}"
+    elif w["type"] == "lagrangian":
+        knob = f"epsilon{w['epsilon']}"
+    else:
+        knob = w["type"]
+    return f"{cfg['method']}_{cfg['env']['id']}_{knob}_seed{seed}"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("config")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=None)
     ap.add_argument("--eval-episodes", type=int, default=None, help="override eval.episodes (fast smoke tests)")
-    ap.add_argument("--out", default="runs")
+    ap.add_argument("--out", default="runs", help="base output dir, e.g. runs/exp1")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(Path(args.config).read_text())
     cfg["seed"] = args.seed
     total_steps = args.steps or cfg["agent"].get("total_steps", 150_000)
 
-    run_id = cfg.get("run_id") or f"{cfg['method']}_{cfg['env']['id']}_seed{args.seed}"
+    run_id = cfg.get("run_id") or _auto_run_id(cfg, args.seed)
     out = Path(args.out) / run_id
+    if out.exists():
+        v = 2
+        while (Path(args.out) / f"{run_id}_v{v}").exists():
+            v += 1
+        run_id = f"{run_id}_v{v}"
+        out = Path(args.out) / run_id
     out.mkdir(parents=True, exist_ok=True)
     # write the resolved config up front: a full run is ~30 min, so an interrupted
     # one otherwise leaves a bare directory with no record of what it was
@@ -58,7 +75,7 @@ def main():
 
     # --- build the four-method-agnostic pipeline ---
     from denrl.registry import build_env
-    from denrl.weights import WeightUpdateCallback, LagrangianWeight
+    from denrl.weights import WeightUpdateCallback, EvalCallback, LagrangianWeight
     from denrl import metrics
     from stable_baselines3 import SAC
     from stable_baselines3.common.vec_env import DummyVecEnv
@@ -73,24 +90,45 @@ def main():
 
     callbacks = []
     if isinstance(weight, LagrangianWeight):
-        callbacks.append(WeightUpdateCallback(weight, update_freq=cfg["weight"].get("update_freq", 1000)))
+        callbacks.append(WeightUpdateCallback(weight, update_freq=cfg["weight"].get("update_freq", 1000),
+                                                 out_dir=str(out)))
 
-    model = SAC("MlpPolicy", vec, seed=args.seed, verbose=0)
+    eval_cfg = cfg.get("eval", {})
+    callbacks.append(EvalCallback(
+        clean_env=clean, zone=zone, out_dir=out,
+        eval_freq=eval_cfg.get("eval_freq", 10_000),
+        n_episodes=eval_cfg.get("eval_episodes_during_training", 50),
+        max_steps=eval_cfg.get("max_steps", 200),
+    ))
+
+    model = SAC("MlpPolicy", vec, seed=args.seed, verbose=0,
+                tensorboard_log=str(out / "tb"))
 
     t0 = time.perf_counter()
     model.learn(total_timesteps=total_steps, callback=callbacks or None)
     wall = time.perf_counter() - t0
 
+    # save policy FIRST so it's never lost if final eval is slow/hangs
+    model.save(out / "policy")
+
     # --- evaluate on CLEAN reward ---
     eval_cfg = cfg.get("eval", {})
-    records = metrics.evaluate_policy(
+    records, eval_obs = metrics.evaluate_policy(
         model, clean,
-        n_episodes=args.eval_episodes or eval_cfg.get("episodes", 2000),
+        n_episodes=args.eval_episodes or eval_cfg.get("episodes", 200),
         max_steps=eval_cfg.get("max_steps", 200),
         seed=args.seed,
         zone=zone,
+        collect_obs=True,
     )
     result = metrics.summarize_eval(records)
+
+    from scripts.plot_trajectories import plot_trajectory_snapshot
+    plot_trajectory_snapshot(
+        eval_obs, zone, out / "traj" / "traj_final.png",
+        title=f"final  zone={result['zone_step_frac']:.3f}  return={result['true_return_mean']:.0f}",
+        method=cfg["method"],
+    )
 
     # signal-correctness (E2 decider) — needs a held-out grid with ground truth
     grid = load_offline(cfg["env"])
@@ -112,18 +150,11 @@ def main():
     })
     result.update(weight.log_state())
     if isinstance(weight, LagrangianWeight):
-        # log C alongside α: a flat α with an unsatisfied C means the dual step is
-        # too slow, which is invisible from alpha.csv alone
-        rows = ["update,alpha,constraint_C"]
-        rows += [f"{i},{a},{c}" for i, (a, c) in
-                 enumerate(zip(weight.trajectory[1:], weight.constraint_trajectory))]
-        (out / "alpha.csv").write_text("\n".join(rows))
         result["alpha_trajectory_len"] = len(weight.trajectory)
         result["alpha_init"] = weight.trajectory[0]
 
     (out / "metrics.json").write_text(json.dumps(result, indent=2))
-    model.save(out / "policy")
-    print(f"[{run_id}] zone={result['zone_visit_rate']:.3f} "
+    print(f"[{run_id}] zone_frac={result['zone_step_frac']:.3f} "
           f"return={result['true_return_mean']:.1f} wall={wall:.0f}s -> {out}/metrics.json")
 
 
