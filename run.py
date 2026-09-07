@@ -60,7 +60,7 @@ def main():
     from denrl.registry import build_env
     from denrl.weights import WeightUpdateCallback, LagrangianWeight
     from denrl import metrics
-    from stable_baselines3 import SAC
+    from stable_baselines3 import SAC, PPO
     from stable_baselines3.common.vec_env import DummyVecEnv
 
     penalized, clean, cost_signal, weight, transition_model, zone = build_env(cfg)
@@ -75,7 +75,20 @@ def main():
     if isinstance(weight, LagrangianWeight):
         callbacks.append(WeightUpdateCallback(weight, update_freq=cfg["weight"].get("update_freq", 1000)))
 
-    model = SAC("MlpPolicy", vec, seed=args.seed, verbose=0)
+    algo = cfg["agent"].get("algo", "sac").lower()
+    lr = cfg["agent"].get("learning_rate")
+    if algo == "sac":
+        kwargs = {"seed": args.seed, "verbose": 0}
+        if lr is not None:
+            kwargs["learning_rate"] = lr
+        model = SAC("MlpPolicy", vec, **kwargs)
+    elif algo == "ppo":
+        kwargs = {"seed": args.seed, "verbose": 0}
+        if lr is not None:
+            kwargs["learning_rate"] = lr
+        model = PPO("MlpPolicy", vec, **kwargs)
+    else:
+        raise ValueError(f"unsupported agent.algo: {algo}")
 
     t0 = time.perf_counter()
     model.learn(total_timesteps=total_steps, callback=callbacks or None)

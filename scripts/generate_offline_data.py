@@ -18,7 +18,13 @@ import numpy as np
 import pandas as pd
 import gymnasium as gym
 
-from denrl.env import Zone, ChaoticBandPendulum, FixedStart, ZONE_LOW, ZONE_HIGH
+from denrl.env import (
+    ChaoticBandPendulum,
+    FixedStart,
+    ZONE_HIGH,
+    ZONE_LOW,
+    resolve_zone,
+)
 
 # E3 = E1 physics but a wider/shifted danger zone (spec §4: "unknown/shifted
 # optimal-p"), so a fixed p tuned on E1's zone is miscalibrated here while
@@ -39,6 +45,8 @@ def main():
                     help="mirror the zone onto both sides of the swing (legacy). Forced on "
                          "for E2, whose frozen dataset and transition models were built that "
                          "way; regenerating E2 one-sided would invalidate models/E2_*.pt.")
+    ap.add_argument("--continuous", action="store_true",
+                    help="for LL only: use LunarLander continuous actions.")
     args = ap.parse_args()
 
     env = gym.make("Pendulum-v1")
@@ -51,7 +59,14 @@ def main():
         symmetric = True
     elif args.env == "E3":
         lo, hi = E3_ZONE
-    zone = Zone(lo, hi, symmetric=symmetric)
+    elif args.env == "LL":
+        env = gym.make("LunarLander-v3", continuous=args.continuous)
+    zone_cfg = {
+        "id": args.env,
+        "excluded_zone": (lo, hi),
+        "zone_symmetric": symmetric,
+    } if args.env in ("E1", "E2", "E3") else {"id": args.env}
+    zone = resolve_zone(zone_cfg)
     # Data collection deliberately starts uniformly over the circle, even though the
     # AGENT starts at rest (env.start_state, spec §3). The offline set has to cover the
     # state space for the excluded zone to show up as *the* hole in it: random actions
@@ -69,15 +84,19 @@ def main():
         for t in range(args.max_steps):
             action = env.action_space.sample()
             nxt, _, term, trunc, _ = env.step(action)
-            if zone.contains(nxt):  # paper: terminate on entering the low-density zone
+            if args.env in ("E1", "E2", "E3") and zone.contains(nxt):
                 break
-            rows.append(np.concatenate([obs, action, nxt]))
+            obs_arr = np.asarray(obs, dtype=np.float32).reshape(-1)
+            act_arr = np.asarray(action, dtype=np.float32).reshape(-1)
+            nxt_arr = np.asarray(nxt, dtype=np.float32).reshape(-1)
+            rows.append(np.concatenate([obs_arr, act_arr, nxt_arr]))
             obs = nxt
             if term or trunc:
                 break
 
     arr = np.array(rows)
-    n_obs, n_act = 3, 1
+    n_obs = int(env.observation_space.shape[0])
+    n_act = int(env.action_space.shape[0]) if hasattr(env.action_space, "shape") and env.action_space.shape else 1
     cols = ([f"obs{i}" for i in range(n_obs)] +
             [f"act{i}" for i in range(n_act)] +
             [f"next{i}" for i in range(n_obs)])

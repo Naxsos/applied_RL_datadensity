@@ -10,35 +10,83 @@ import numpy as np
 from .env import obs_to_theta, in_zone, PAPER_ZONE
 
 
+def _looks_like_lunar_lander(obs) -> bool:
+    return np.shape(obs)[0] == 8
+
+
+def _ll_touchdown_like(obs) -> bool:
+    arr = np.asarray(obs, dtype=float).reshape(-1)
+    if arr.shape[0] < 8:
+        return False
+    x, y, vx, vy, angle, ang_vel, leg_l, leg_r = [float(v) for v in arr[:8]]
+    stable_pose = (abs(x) < 0.25 and y < 0.50 and
+                   abs(vx) < 0.20 and abs(vy) < 0.20 and
+                   abs(angle) < 0.25 and abs(ang_vel) < 0.25)
+    has_contact = (leg_l > 0.5) or (leg_r > 0.5)
+    return bool(stable_pose or has_contact)
+
+
 def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 200, seed: int = 0,
                      zone=PAPER_ZONE):
     """Roll the policy on the CLEAN (unpenalized) env. Returns per-episode records.
 
     Each record: {return, entered_zone, path, upright, steps_to_upright}.
+    For LL, landing is reported both as strict terminal landings and
+    touchdown-like stable near-pad outcomes.
     """
     rng = np.random.default_rng(seed)
     records = []
+    env_is_ll = getattr(clean_env.unwrapped, "spec", None) and getattr(clean_env.unwrapped.spec, "id", "") == "LunarLander-v3"
     for ep in range(n_episodes):
         obs, _ = clean_env.reset(seed=int(rng.integers(1 << 31)))
         ep_ret, entered, thetas = 0.0, False, []
+        landed_at: Optional[int] = None
+        strict_landed = False
+        crashed = False
+        timeout = False
         upright_at: Optional[int] = None
+        last_reward = 0.0
+        last_obs = np.asarray(obs)
         for t in range(max_steps):
             action, _ = model.predict(obs, deterministic=True)
             obs, reward, term, trunc, info = clean_env.step(action)
-            ep_ret += float(reward)
-            th = obs_to_theta(obs)
-            thetas.append(th)
+            last_obs = np.asarray(obs)
+            last_reward = float(reward)
+            ep_ret += last_reward
+            if not _looks_like_lunar_lander(obs) and np.shape(obs)[0] >= 3:
+                th = obs_to_theta(obs)
+                thetas.append(th)
+                if upright_at is None and abs(th) < 0.2:
+                    upright_at = t
             entered = entered or in_zone(obs, zone)
-            if upright_at is None and abs(th) < 0.2:
-                upright_at = t
+            if env_is_ll:
+                if term and landed_at is None and not crashed:
+                    # LunarLander-v3 does not expose landed/crashed info keys.
+                    # Final positive terminal reward is a robust proxy for successful landing.
+                    if last_reward > 0.0:
+                        strict_landed = True
+                        landed_at = t
+                    else:
+                        crashed = True
+                timeout = timeout or bool(trunc)
             if term or trunc:
                 break
+        if env_is_ll and (not strict_landed) and _ll_touchdown_like(last_obs):
+            landed_at = t if landed_at is None else landed_at
+        if env_is_ll and not (term or trunc):
+            timeout = True
         records.append({
             "return": ep_ret,
             "entered_zone": entered,
-            "path": _classify_path(thetas),
-            "upright": upright_at is not None,
-            "steps_to_upright": upright_at if upright_at is not None else max_steps,
+            "path": None if env_is_ll else _classify_path(thetas),
+            "upright": None if env_is_ll else (upright_at is not None),
+            "steps_to_upright": None if env_is_ll else (upright_at if upright_at is not None else max_steps),
+            "landed": (landed_at is not None) if env_is_ll else None,
+            "strict_landed": strict_landed if env_is_ll else None,
+            "crashed": crashed if env_is_ll else None,
+            "timed_out": timeout if env_is_ll else None,
+            "episode_len": t + 1,
+            "env_kind": "LL" if env_is_ll else "pendulum",
         })
     return records
 
@@ -54,17 +102,25 @@ def _classify_path(thetas) -> str:
 def summarize_eval(records) -> dict:
     rets = np.array([r["return"] for r in records], dtype=float)
     n = len(records)
-    n_left = sum(r["path"] == "left" for r in records)
-    n_right = sum(r["path"] == "right" for r in records)
-    return {
+    ll_mode = any(r.get("env_kind") == "LL" for r in records)
+    n_left = sum(r.get("path") == "left" for r in records)
+    n_right = sum(r.get("path") == "right" for r in records)
+    out = {
         "zone_visit_rate": float(np.mean([r["entered_zone"] for r in records])),
-        "left_path_pct": round(100 * n_left / max(n, 1)),
-        "right_path_pct": round(100 * n_right / max(n, 1)),
+        "left_path_pct": None if ll_mode else round(100 * n_left / max(n, 1)),
+        "right_path_pct": None if ll_mode else round(100 * n_right / max(n, 1)),
         "true_return_mean": float(rets.mean()),
         "true_return_std": float(rets.std()),
-        "upright_success_rate": float(np.mean([r["upright"] for r in records])),
-        "time_to_upright_mean": float(np.mean([r["steps_to_upright"] for r in records])),
+        "upright_success_rate": None if ll_mode else float(np.mean([r["upright"] for r in records])),
+        "time_to_upright_mean": None if ll_mode else float(np.mean([r["steps_to_upright"] for r in records])),
+        "episode_len_mean": float(np.mean([r.get("episode_len", 0) for r in records])),
     }
+    if ll_mode:
+        out["landing_success_rate"] = float(np.mean([r.get("landed", False) for r in records]))
+        out["strict_landing_rate"] = float(np.mean([r.get("strict_landed", False) for r in records]))
+        out["crash_rate"] = float(np.mean([r.get("crashed", False) for r in records]))
+        out["timeout_rate"] = float(np.mean([r.get("timed_out", False) for r in records]))
+    return out
 
 
 def signal_correctness(cost_signal, transition_model, grid_obs, grid_act) -> dict:
