@@ -21,14 +21,15 @@ cost_signal:
   ref_percentile: 5.0
 weight:
   type: fixed
-  p: 0.0
+  p: 2.0
 agent:
   algo: sac
   learning_rate: 0.0003
-  total_steps: 1000000
+  total_steps: 300000
 eval:
-  episodes: 500
+  episodes: 100
   max_steps: 500
   reward: clean
 compute:
   local_mem_budget_mb: 18000
+  device: mps
