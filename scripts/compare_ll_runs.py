@@ -3,7 +3,7 @@
 
 Usage:
     # Compare two specific runs
-    python scripts/compare_ll_runs.py --runs baseline_LL_seed0 lagr_LL_seed0
+    python scripts/compare_ll_runs.py --runs baseline_LL_p0.0_seed0 lagr_LL_epsilon0.05_seed0
 
     # Aggregate all seeds for each method
     python scripts/compare_ll_runs.py --runs baseline_LL_* lagr_LL_* --aggregate
@@ -251,7 +251,7 @@ def compare_runs(runs_data: dict[str, dict], out_path: str = "figures/ll_run_com
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--runs", nargs="+", required=True, help="run directories to compare (e.g., baseline_LL_seed0 lagr_LL_seed0)")
+    ap.add_argument("--runs", nargs="+", required=True, help="run directories to compare (e.g., baseline_LL_p0.0_seed0 lagr_LL_epsilon0.05_seed0)")
     ap.add_argument("--aggregate", action="store_true", help="aggregate by method name across seeds")
     ap.add_argument("--out", default="figures/ll_run_comparison.png", help="output path for the visualization")
     args = ap.parse_args()

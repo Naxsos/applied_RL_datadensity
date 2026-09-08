@@ -43,7 +43,11 @@ def main():
     cfg["seed"] = args.seed
     total_steps = args.steps or cfg["agent"].get("total_steps", 150_000)
 
-    run_id = cfg.get("run_id") or f"{cfg['method']}_{cfg['env']['id']}_seed{args.seed}"
+    if cfg.get("run_id"):
+        run_id = cfg["run_id"]
+    else:
+        knob = _knob(cfg)
+        run_id = f"{cfg['method']}_{cfg['env']['id']}_{knob['knob']}{knob['value']}_seed{args.seed}"
     out = Path(args.out) / run_id
     out.mkdir(parents=True, exist_ok=True)
     # write the resolved config up front: a full run is ~30 min, so an interrupted

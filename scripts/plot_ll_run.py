@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Plot LunarLander run metrics as a visual summary."""
+"""Plot LunarLander run metrics as a visual summary.
+
+Example:
+    python scripts/plot_ll_run.py --run runs/baseline_LL_p0_seed0
+    python scripts/plot_ll_run.py --run runs/lagr_LL_epsilon0.05_seed0
+"""
+import argparse
 import json
 from pathlib import Path
 
@@ -9,7 +15,14 @@ import matplotlib.pyplot as plt
 
 
 def main():
-    metrics_path = Path("runs/baseline_LL_seed0/metrics.json")
+    ap = argparse.ArgumentParser(description="Plot a LunarLander run summary from a metrics.json file.")
+    ap.add_argument("--run", type=Path, default=Path("runs/baseline_LL_p0_seed0"), help="run directory containing metrics.json")
+    ap.add_argument("--out", type=Path, default=Path("figures/ll_run_metrics.png"), help="output image path")
+    args = ap.parse_args()
+
+    metrics_path = args.run / "metrics.json"
+    if not metrics_path.exists():
+        raise FileNotFoundError(f"Missing metrics.json at {metrics_path}")
     with open(metrics_path) as f:
         m = json.load(f)
 
@@ -75,10 +88,11 @@ def main():
         bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3),
     )
 
-    fig.suptitle("LunarLander Baseline (continuous SAC)", fontsize=12, fontweight="bold")
+    fig.suptitle(f"LunarLander run: {args.run.name}", fontsize=12, fontweight="bold")
     fig.tight_layout()
-    fig.savefig("figures/ll_run_metrics.png", dpi=150)
-    print("wrote figures/ll_run_metrics.png")
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(args.out, dpi=150)
+    print(f"wrote {args.out}")
 
 
 if __name__ == "__main__":

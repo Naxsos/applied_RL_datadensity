@@ -58,12 +58,12 @@ python run.py configs/baseline_LL.yaml --seed 0
 ```
 
 This writes a run directory like:
-- `runs/baseline_LL_seed0/`
+- `runs/baseline_LL_p2_seed0/`
 
 Key outputs:
-- `runs/baseline_LL_seed0/config.yaml`
-- `runs/baseline_LL_seed0/metrics.json`
-- `runs/baseline_LL_seed0/policy.zip`
+- `runs/baseline_LL_p2_seed0/config.yaml`
+- `runs/baseline_LL_p2_seed0/metrics.json`
+- `runs/baseline_LL_p2_seed0/policy.zip`
 
 ## 4. Run the Lagrangian variant
 ```bash
@@ -71,10 +71,10 @@ python run.py configs/lagr_LL.yaml --seed 0
 ```
 
 This writes:
-- `runs/lagr_LL_seed0/`
+- `runs/lagr_LL_epsilon0.05_seed0/`
 
 Additional output for the Lagrangian method:
-- `runs/lagr_LL_seed0/alpha.csv`
+- `runs/lagr_LL_epsilon0.05_seed0/alpha.csv`
 
 ## 5. Plot a single LL run summary
 ```bash
@@ -82,7 +82,7 @@ python scripts/plot_ll_run.py
 ```
 
 This reads:
-- `runs/baseline_LL_seed0/metrics.json`
+- `runs/baseline_LL_p2_seed0/metrics.json`
 
 and writes:
 - `figures/ll_run_metrics.png`
