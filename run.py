@@ -35,6 +35,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=None)
     ap.add_argument("--eval-episodes", type=int, default=None, help="override eval.episodes (fast smoke tests)")
+    ap.add_argument("--device", default=None, help="torch device for supported models: auto, cpu, mps, cuda")
     ap.add_argument("--out", default="runs")
     args = ap.parse_args()
 
@@ -54,7 +55,7 @@ def main():
         import torch
         torch.manual_seed(args.seed)
     except Exception:
-        pass
+        torch = None
 
     # --- build the four-method-agnostic pipeline ---
     from denrl.registry import build_env
@@ -77,13 +78,14 @@ def main():
 
     algo = cfg["agent"].get("algo", "sac").lower()
     lr = cfg["agent"].get("learning_rate")
+    device = _resolve_device(torch, args.device or cfg.get("compute", {}).get("device"))
     if algo == "sac":
-        kwargs = {"seed": args.seed, "verbose": 0}
+        kwargs = {"seed": args.seed, "verbose": 0, "device": device}
         if lr is not None:
             kwargs["learning_rate"] = lr
         model = SAC("MlpPolicy", vec, **kwargs)
     elif algo == "ppo":
-        kwargs = {"seed": args.seed, "verbose": 0}
+        kwargs = {"seed": args.seed, "verbose": 0, "device": device}
         if lr is not None:
             kwargs["learning_rate"] = lr
         model = PPO("MlpPolicy", vec, **kwargs)
@@ -122,6 +124,7 @@ def main():
         "n_models": n_models,
         "fits_local": (peak_mem is None) or (peak_mem < cfg.get("compute", {}).get("local_mem_budget_mb", 18000)),
         "hparam": _knob(cfg),
+        "device": device,
     })
     result.update(weight.log_state())
     if isinstance(weight, LagrangianWeight):
@@ -155,6 +158,30 @@ def _peak_mem_mb():
         return round(rss / (1024 if sys.platform == "darwin" else 1024) / 1024, 1) if sys.platform == "darwin" else round(rss / 1024, 1)
     except Exception:
         return None
+
+
+def _resolve_device(torch_mod, requested: str | None) -> str:
+    if requested is None or requested == "auto":
+        if torch_mod is None:
+            return "cpu"
+        if hasattr(torch_mod.backends, "mps") and torch_mod.backends.mps.is_available():
+            return "mps"
+        if torch_mod.cuda.is_available():
+            return "cuda"
+        return "cpu"
+
+    device = requested.lower()
+    if device == "mps":
+        if torch_mod is None or not hasattr(torch_mod.backends, "mps") or not torch_mod.backends.mps.is_available():
+            raise RuntimeError("device=mps requested but torch MPS is not available")
+        return device
+    if device == "cuda":
+        if torch_mod is None or not torch_mod.cuda.is_available():
+            raise RuntimeError("device=cuda requested but torch CUDA is not available")
+        return device
+    if device == "cpu":
+        return device
+    raise ValueError(f"unsupported device: {requested}")
 
 
 if __name__ == "__main__":

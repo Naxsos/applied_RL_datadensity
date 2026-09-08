@@ -136,8 +136,46 @@ This writes:
 
 The report includes overlap, precision/recall, and threshold suggestions derived from low-density states in the offline dataset.
 
-## 7. Useful multi-seed runs
-Run a small LL comparison:
+## 7. LL run matrix
+Run the default LL matrix:
+
+```bash
+./scripts/run_matrix_LL.sh
+```
+
+This launches a resumable sweep over:
+- `baseline_LL` with `p in {0.0, 2.0, 10.0, 30.0}`
+- `lagr_LL` with `epsilon in {0.02, 0.05, 0.1}`
+- seeds `0 1 2`
+
+Each run is isolated in its own process and the matrix uses a resumable, parallel launcher with a live progress indicator while forcing `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, and `OPENBLAS_NUM_THREADS=1` inside each job. That usually improves total wall-clock time on multi-core machines by avoiding thread oversubscription while still letting you see how far the sweep has progressed.
+
+Useful overrides:
+```bash
+SEEDS="0 1" PARALLEL=2 ./scripts/run_matrix_LL.sh
+STEPS=300000 EVAL_EPISODES=300 SUFFIX=pilot ./scripts/run_matrix_LL.sh
+PY=.venv/bin/python PARALLEL=3 ./scripts/run_matrix_LL.sh
+```
+
+Run directories are named like:
+- `runs/baseline_LL_p0.0_seed0_matrix/`
+- `runs/lagr_LL_epsilon0.05_seed2_matrix/`
+
+The script skips any run that already has `metrics.json`, so re-running it resumes incomplete sweeps instead of repeating finished jobs.
+
+Aggregate LL-only results with:
+
+```bash
+python scripts/aggregate_ll.py --runs runs --out .
+```
+
+This writes:
+- `ll_results.csv`
+- `ll_decision_table.csv`
+- `ll_decision_table.md`
+
+## 8. Useful multi-seed runs
+Run a small LL comparison manually:
 
 ```bash
 python run.py configs/baseline_LL.yaml --seed 0
