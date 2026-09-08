@@ -2,6 +2,12 @@
 
 This guide is the LL-specific runbook for the continuous LunarLander setup in this repo.
 
+The LL setup uses two related but distinct ideas:
+- the **offline dataset** defines which observed states are dense or sparse for the KDE cost signal;
+- the **excluded zone** is a hand-specified near-ground risk region used for evaluation and, for the Lagrangian variant, the zone-rate constraint.
+
+That means the LL zone is **not** automatically inferred from the KDE. It is an LL-specific safety prior motivated by risky, weakly covered states near the ground, while the density penalty itself is still learned from the frozen offline dataset.
+
 ## Setup
 ```bash
 pip install -r requirements.txt
@@ -26,6 +32,7 @@ This writes:
 - `data/LL_offline.parquet`
 
 Unlike the Pendulum-style environments, LL offline data generation does **not** stop episodes on excluded-zone entry. That avoids creating an artificial blind spot close to the ground.
+The resulting parquet file therefore remains the reference distribution for KDE density estimation, instead of baking the manual LL risk zone into data collection itself.
 
 ## 2. Visualize low-density pockets in the offline data
 ```bash
@@ -105,6 +112,30 @@ The comparison figure includes:
 - episode length with deviation
 - zone visit rate with deviation
 
+For matched-run statistical testing, use:
+
+```bash
+python scripts/analyze_ll_stats.py --runs baseline_LL_* lagr_LL_*
+```
+
+This writes:
+- `figures/ll_stats_analysis.json`
+- `figures/ll_stats_analysis.md`
+
+The stats script also reports whether the selected LL runs satisfy the repository experiment spec (matched config, clean-reward eval, and sufficient seeds).
+
+To quantify whether the manual LL zone matches the KDE low-density pocket, use:
+
+```bash
+python scripts/validate_ll_zone.py
+```
+
+This writes:
+- `figures/ll_zone_validation.json`
+- `figures/ll_zone_validation.md`
+
+The report includes overlap, precision/recall, and threshold suggestions derived from low-density states in the offline dataset.
+
 ## 7. Useful multi-seed runs
 Run a small LL comparison:
 
@@ -117,6 +148,8 @@ python scripts/compare_ll_runs.py --runs baseline_LL_* lagr_LL_* --aggregate
 ```
 
 ## Notes
-- LL uses the same overall penalty pipeline as the other environments, but with an LL-specific excluded low-density region.
+- LL uses the same overall penalty pipeline as the other environments, but with an LL-specific near-ground risk zone.
+- The current default LL thresholds are data-driven from the offline KDE validation pass: `altitude_max=0.21`, `speed_min=0.72`, `descent_speed_min=0.32`, `tilt_min=0.47`, `angular_speed_min=0.25`.
+- KDE density is still fit from the frozen offline dataset; the LL risk zone is now a simple thresholded approximation to the low-density pocket rather than a purely manual contour.
 - The current baseline config is intentionally conservative with `p: 0.0`.
 - Evaluation uses clean reward with `500` episodes and `500` max steps per episode in the shipped LL configs.

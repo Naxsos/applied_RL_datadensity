@@ -13,11 +13,11 @@ class LunarDensityZone:
 
     def __init__(
         self,
-        altitude_max: float = 0.35,
-        speed_min: float = 0.90,
-        descent_speed_min: float = 0.60,
-        tilt_min: float = 0.45,
-        angular_speed_min: float = 1.00,
+        altitude_max: float = 0.21,
+        speed_min: float = 0.72,
+        descent_speed_min: float = 0.32,
+        tilt_min: float = 0.47,
+        angular_speed_min: float = 0.25,
     ):
         self.altitude_max = float(altitude_max)
         self.speed_min = float(speed_min)

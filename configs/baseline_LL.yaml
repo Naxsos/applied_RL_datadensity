@@ -5,11 +5,11 @@ env:
   continuous: true
   offline_dataset: data/LL_offline.parquet
   excluded_zone:
-    altitude_max: 0.35
-    speed_min: 0.9
-    descent_speed_min: 0.6
-    tilt_min: 0.45
-    angular_speed_min: 1.0
+    altitude_max: 0.21
+    speed_min: 0.72
+    descent_speed_min: 0.32
+    tilt_min: 0.47
+    angular_speed_min: 0.25
 transition_model:
   type: lstm
   frozen_checkpoint: null
