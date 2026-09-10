@@ -35,7 +35,7 @@ weight:
   update_freq: 500
 agent:
   algo: sac
-  total_steps: 150000
+  total_steps: 80000
 eval:
   episodes: 2000
   max_steps: 200

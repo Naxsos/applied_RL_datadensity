@@ -14,6 +14,8 @@ def build_cost_signal(cfg: dict, transition_model=None):
             bandwidth=cfg.get("bandwidth", 0.1),
             ref_percentile=cfg.get("ref_percentile", 5.0),
             max_fit_points=cfg.get("max_fit_points", 25_000),
+            threshold=cfg.get("threshold"),
+            threshold_mode=cfg.get("threshold_mode", "binary"),
         )
     if t == "ensemble_variance":
         if transition_model is None:

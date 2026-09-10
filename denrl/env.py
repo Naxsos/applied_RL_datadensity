@@ -63,7 +63,7 @@ def resolve_zone(env_cfg: dict):
     raise ValueError(f"unknown env id {env_id}")
 
 
-def make_sim_env(env_cfg: dict, transition_model=None) -> gym.Env:
+def make_sim_env(env_cfg: dict, transition_model=None, render_mode=None) -> gym.Env:
     """Build the env. Dynamics stay real physics unless env.use_model_dynamics is set
     (holding dynamics fixed across methods isolates the cost-signal effect)."""
     env_id = env_cfg.get("id", "E1")

@@ -5,13 +5,13 @@ Implements EXPERIMENT_SPEC.md: two orthogonal, pluggable axes
 reuses so table cells are comparable.
 """
 from .costs import CostSignal, KDEDensityCost, EnsembleVarianceCost, BNNUncertaintyCost
-from .weights import PenaltyWeight, FixedWeight, LagrangianWeight, WeightUpdateCallback
+from .weights import PenaltyWeight, FixedWeight, LagrangianWeight, WeightUpdateCallback, EvalCallback
 from .env import PenalizedEnv, make_sim_env
 from .registry import build_cost_signal, build_weight, build_env
 
 __all__ = [
     "CostSignal", "KDEDensityCost", "EnsembleVarianceCost", "BNNUncertaintyCost",
-    "PenaltyWeight", "FixedWeight", "LagrangianWeight", "WeightUpdateCallback",
+    "PenaltyWeight", "FixedWeight", "LagrangianWeight", "WeightUpdateCallback", "EvalCallback",
     "PenalizedEnv", "make_sim_env",
     "build_cost_signal", "build_weight", "build_env",
 ]
