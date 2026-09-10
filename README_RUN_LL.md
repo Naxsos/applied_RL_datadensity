@@ -158,7 +158,7 @@ PY=.venv/bin/python PARALLEL=3 ./scripts/run_matrix_LL.sh
 ```
 
 Run directories are named like:
-- `runs/baseline_LL_p0.0_seed0_matrix/`
+- `runs/baseline_LL_p0.0_seed0/`
 - `runs/lagr_LL_epsilon0.05_seed2_matrix/`
 
 The script skips any run that already has `metrics.json`, so re-running it resumes incomplete sweeps instead of repeating finished jobs.

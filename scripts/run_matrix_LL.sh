@@ -11,9 +11,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 read -r -a SEEDS <<< "${SEEDS:-0 1 2}"
-STEPS=${STEPS:-1000000}
-EVAL_EPISODES=${EVAL_EPISODES:-500}
-PARALLEL=${PARALLEL:-2}
+STEPS=${STEPS:-300000}
+EVAL_EPISODES=${EVAL_EPISODES:-100}
+PARALLEL=${PARALLEL:-4}
 SUFFIX=${SUFFIX:-matrix}
 PY=${PY:-python}
 
