@@ -58,7 +58,8 @@ def main():
         run_id = cfg["run_id"]
     else:
         knob = _knob(cfg)
-        run_id = f"{cfg['method']}_{cfg['env']['id']}_{knob['knob']}{knob['value']}_seed{args.seed}"    out = Path(args.out) / run_id
+        run_id = f"{cfg['method']}_{cfg['env']['id']}_{knob['knob']}{knob['value']}_seed{args.seed}"
+    out = Path(args.out) / run_id
     if out.exists():
         v = 2
         while (Path(args.out) / f"{run_id}_v{v}").exists():

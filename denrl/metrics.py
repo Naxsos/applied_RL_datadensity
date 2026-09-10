@@ -36,10 +36,12 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
     """
     rng = np.random.default_rng(seed)
     records = []
+    all_obs = []
     env_is_ll = getattr(clean_env.unwrapped, "spec", None) and getattr(clean_env.unwrapped.spec, "id", "") == "LunarLander-v3"
     for ep in range(n_episodes):
         obs, _ = clean_env.reset(seed=int(rng.integers(1 << 31)))
         ep_ret, entered, thetas = 0.0, False, []
+        zone_steps = 0
         landed_at: Optional[int] = None
         strict_landed = False
         crashed = False
@@ -51,6 +53,8 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
             action, _ = model.predict(obs, deterministic=True)
             obs, reward, term, trunc, info = clean_env.step(action)
             last_obs = np.asarray(obs)
+            if collect_obs:
+                all_obs.append(last_obs)
             last_reward = float(reward)
             ep_ret += last_reward
             if not _looks_like_lunar_lander(obs) and np.shape(obs)[0] >= 3:
@@ -58,7 +62,9 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
                 thetas.append(th)
                 if upright_at is None and abs(th) < 0.2:
                     upright_at = t
-            entered = entered or in_zone(obs, zone)
+            in_z = in_zone(obs, zone)
+            entered = entered or in_z
+            zone_steps += int(in_z)
             if env_is_ll:
                 if term and landed_at is None and not crashed:
                     # LunarLander-v3 does not expose landed/crashed info keys.
@@ -78,6 +84,8 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
         records.append({
             "return": ep_ret,
             "entered_zone": entered,
+            "zone_steps": zone_steps,
+            "zone_step_frac": zone_steps / max(t + 1, 1),
             "path": None if env_is_ll else _classify_path(thetas),
             "upright": None if env_is_ll else (upright_at is not None),
             "steps_to_upright": None if env_is_ll else (upright_at if upright_at is not None else max_steps),
@@ -109,6 +117,8 @@ def summarize_eval(records) -> dict:
     n_right = sum(r.get("path") == "right" for r in records)
     out = {
         "zone_visit_rate": float(np.mean([r["entered_zone"] for r in records])),
+        "zone_step_frac": float(np.mean([r["zone_step_frac"] for r in records])),
+        "zone_steps_mean": float(np.mean([r["zone_steps"] for r in records])),
         "left_path_pct": None if ll_mode else round(100 * n_left / max(n, 1)),
         "right_path_pct": None if ll_mode else round(100 * n_right / max(n, 1)),
         "true_return_mean": float(rets.mean()),
