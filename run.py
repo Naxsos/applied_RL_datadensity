@@ -46,15 +46,19 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--steps", type=int, default=None)
     ap.add_argument("--eval-episodes", type=int, default=None, help="override eval.episodes (fast smoke tests)")
-    ap.add_argument("--out", default="runs", help="base output dir, e.g. runs/exp1")
+    ap.add_argument("--device", default=None, help="torch device for supported models: auto, cpu, mps, cuda")
+    ap.add_argument("--out", default="runs")
     args = ap.parse_args()
 
     cfg = yaml.safe_load(Path(args.config).read_text())
     cfg["seed"] = args.seed
     total_steps = args.steps or cfg["agent"].get("total_steps", 150_000)
 
-    run_id = cfg.get("run_id") or _auto_run_id(cfg, args.seed)
-    out = Path(args.out) / run_id
+    if cfg.get("run_id"):
+        run_id = cfg["run_id"]
+    else:
+        knob = _knob(cfg)
+        run_id = f"{cfg['method']}_{cfg['env']['id']}_{knob['knob']}{knob['value']}_seed{args.seed}"    out = Path(args.out) / run_id
     if out.exists():
         v = 2
         while (Path(args.out) / f"{run_id}_v{v}").exists():
@@ -71,13 +75,13 @@ def main():
         import torch
         torch.manual_seed(args.seed)
     except Exception:
-        pass
+        torch = None
 
     # --- build the four-method-agnostic pipeline ---
     from denrl.registry import build_env
     from denrl.weights import WeightUpdateCallback, EvalCallback, LagrangianWeight
     from denrl import metrics
-    from stable_baselines3 import SAC
+    from stable_baselines3 import SAC, PPO
     from stable_baselines3.common.vec_env import DummyVecEnv
 
     penalized, clean, cost_signal, weight, transition_model, zone = build_env(cfg)
@@ -101,8 +105,20 @@ def main():
         max_steps=eval_cfg.get("max_steps", 200),
     ))
 
-    model = SAC("MlpPolicy", vec, seed=args.seed, verbose=0,
-                tensorboard_log=str(out / "tb"))
+    algo = cfg["agent"].get("algo", "sac").lower()
+    lr = cfg["agent"].get("learning_rate")
+    if algo == "sac":
+        kwargs = {"seed": args.seed, "verbose": 0}
+        if lr is not None:
+            kwargs["learning_rate"] = lr
+        model = SAC("MlpPolicy", vec, **kwargs)
+    elif algo == "ppo":
+        kwargs = {"seed": args.seed, "verbose": 0}
+        if lr is not None:
+            kwargs["learning_rate"] = lr
+        model = PPO("MlpPolicy", vec, **kwargs)
+    else:
+        raise ValueError(f"unsupported agent.algo: {algo}")
 
     t0 = time.perf_counter()
     model.learn(total_timesteps=total_steps, callback=callbacks or None)
@@ -147,6 +163,7 @@ def main():
         "n_models": n_models,
         "fits_local": (peak_mem is None) or (peak_mem < cfg.get("compute", {}).get("local_mem_budget_mb", 18000)),
         "hparam": _knob(cfg),
+        "device": device,
     })
     result.update(weight.log_state())
     if isinstance(weight, LagrangianWeight):
@@ -173,6 +190,30 @@ def _peak_mem_mb():
         return round(rss / (1024 if sys.platform == "darwin" else 1024) / 1024, 1) if sys.platform == "darwin" else round(rss / 1024, 1)
     except Exception:
         return None
+
+
+def _resolve_device(torch_mod, requested: str | None) -> str:
+    if requested is None or requested == "auto":
+        if torch_mod is None:
+            return "cpu"
+        if hasattr(torch_mod.backends, "mps") and torch_mod.backends.mps.is_available():
+            return "mps"
+        if torch_mod.cuda.is_available():
+            return "cuda"
+        return "cpu"
+
+    device = requested.lower()
+    if device == "mps":
+        if torch_mod is None or not hasattr(torch_mod.backends, "mps") or not torch_mod.backends.mps.is_available():
+            raise RuntimeError("device=mps requested but torch MPS is not available")
+        return device
+    if device == "cuda":
+        if torch_mod is None or not torch_mod.cuda.is_available():
+            raise RuntimeError("device=cuda requested but torch CUDA is not available")
+        return device
+    if device == "cpu":
+        return device
+    raise ValueError(f"unsupported device: {requested}")
 
 
 if __name__ == "__main__":

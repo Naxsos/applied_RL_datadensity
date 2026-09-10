@@ -18,6 +18,19 @@ python aggregate.py                                     # -> results.csv + decis
 `baseline`/`lagr` run immediately: `frozen_checkpoint: null` makes the sim env
 use real physics, so you get end-to-end numbers before any model is trained.
 
+## LunarLander pilot (minimal integration)
+```bash
+python scripts/generate_offline_data.py --env LL
+python run.py configs/baseline_LL.yaml --seed 0
+```
+This uses a separate LunarLander environment implementation (`denrl/env_lunar_lander.py`)
+with the same run/penalty pipeline structure as Pendulum and an LL-specific excluded
+low-density region (configured under `env.excluded_zone` in `configs/baseline_LL.yaml`).
+For LL, offline data collection does **not** terminate on zone entry (unlike E1/E2/E3),
+so KDE does not create an artificial near-ground blind spot that can suppress landing.
+The pilot baseline uses **continuous LunarLander + SAC** with `weight.p: 0.0` as a
+safe default while LL density-penalty tuning is still in progress.
+
 ## Enabling the uncertainty methods (E2)
 ```bash
 python scripts/generate_offline_data.py --env E2                       # TODO: inject chaotic band

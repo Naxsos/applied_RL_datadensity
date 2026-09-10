@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from .costs import KDEDensityCost, EnsembleVarianceCost, BNNUncertaintyCost
 from .weights import FixedWeight, LagrangianWeight
-from .env import make_sim_env, PenalizedEnv, as_zone, ZONE_LOW, ZONE_HIGH
+from .env import make_sim_env, PenalizedEnv, resolve_zone
 from .transition import load_transition
 
 
@@ -46,16 +46,14 @@ def build_weight(cfg: dict):
 def build_env(cfg: dict):
     """Returns (penalized_env, clean_env, cost_signal, weight, transition_model, zone).
 
-    `zone` is the excluded-angle band used by this run — overridable via
-    env.excluded_zone (e.g. E3's "shifted danger zone" test), defaults to the
-    paper's zone otherwise. env.zone_symmetric mirrors it onto both sides of the
-    swing (legacy; blocks every route to upright — see env.Zone).
+    `zone` is the env-specific excluded low-density region for this run.
+    Pendulum accepts an angle band (`env.excluded_zone` + `env.zone_symmetric`);
+    LunarLander accepts a threshold dictionary under `env.excluded_zone`.
     """
     transition_model = load_transition(cfg["transition_model"])
     cost_signal = build_cost_signal(cfg["cost_signal"], transition_model)
     weight = build_weight(cfg["weight"])
-    zone = as_zone(cfg["env"].get("excluded_zone", (ZONE_LOW, ZONE_HIGH)),
-                   symmetric=cfg["env"].get("zone_symmetric", False))
+    zone = resolve_zone(cfg["env"])
 
     penalized = PenalizedEnv(make_sim_env(cfg["env"], transition_model), cost_signal, weight, zone=zone)
     clean = make_sim_env(cfg["env"], transition_model)  # unpenalized, for eval

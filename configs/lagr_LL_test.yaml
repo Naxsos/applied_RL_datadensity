@@ -1,0 +1,39 @@
+# LunarLander Lagrangian - SHORT TEST (10k steps only)
+method: lagr
+env:
+  id: LL
+  continuous: true
+  offline_dataset: data/LL_offline.parquet
+  excluded_zone:
+    altitude_max: 0.35
+    speed_min: 0.9
+    descent_speed_min: 0.6
+    tilt_min: 0.45
+    angular_speed_min: 1.0
+transition_model:
+  type: lstm
+  frozen_checkpoint: null
+  obs_dim: 8
+  act_dim: 2
+cost_signal:
+  type: kde_density
+  bandwidth: 0.25
+  ref_percentile: 5.0
+weight:
+  type: lagrangian
+  constraint: zone
+  epsilon: 0.05
+  eta_alpha: 0.1
+  alpha_init: 1.0
+  alpha_max: null
+  update_freq: 500
+agent:
+  algo: sac
+  learning_rate: 0.0003
+  total_steps: 10000
+eval:
+  episodes: 50
+  max_steps: 500
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000
