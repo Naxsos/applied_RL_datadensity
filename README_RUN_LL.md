@@ -2,11 +2,11 @@
 
 This guide is the LL-specific runbook for the continuous LunarLander setup in this repo.
 
-The LL setup uses two related but distinct ideas:
-- the **offline dataset** defines which observed states are dense or sparse for the KDE cost signal;
-- the **excluded zone** is a hand-specified near-ground risk region used for evaluation and, for the Lagrangian variant, the zone-rate constraint.
+The LL setup uses one idea:
+- the **offline dataset** defines which observed states are dense or sparse for the KDE cost signal. In-zone transitions are filtered out, creating a "hole" in the observed distribution that the KDE learns to penalize.
+- the **excluded zone** (a central box-shaped region in position space) is used both during data collection (filtering) and at evaluation (constraint).
 
-That means the LL zone is **not** automatically inferred from the KDE. It is an LL-specific safety prior motivated by risky, weakly covered states near the ground, while the density penalty itself is still learned from the frozen offline dataset.
+This keeps valid landing trajectories around the box while still creating a clear low-density pocket in the data distribution, giving the agent a reason to avoid it.
 
 ## Setup
 ```bash
@@ -29,12 +29,21 @@ python scripts/generate_offline_data.py --env LL
 ```
 
 This writes:
-- `data/LL_offline.parquet`
+- `data/LL_legacy_offline.parquet`
 
-Unlike the Pendulum-style environments, LL offline data generation does **not** stop episodes on excluded-zone entry. That avoids creating an artificial blind spot close to the ground.
-The resulting parquet file therefore remains the reference distribution for KDE density estimation, instead of baking the manual LL risk zone into data collection itself.
+Like the Pendulum-style environments, LL offline data generation now terminates on excluded-zone entry. This creates a "hole" in the state distribution where the KDE low-density cost signal is learned to penalize the zone, giving the agent a reason to route around it.
 
-## 2. Visualize low-density pockets in the offline data
+## 2. Visualize the offline dataset with the excluded zone
+```bash
+python scripts/visualize_ll_offline_with_zone.py
+```
+
+This writes:
+- `figures/ll_offline_with_zone.png`
+
+Shows the dataset distribution with the excluded zone box overlaid. The zone box should contain 0% (or very low %) of the data, confirming that in-zone transitions were filtered out and created a natural "hole" in the observed state distribution that KDE learns to penalize as low-density.
+
+Optional: Visualize low-density pockets detected by KDE:
 ```bash
 python scripts/visualize_ll_low_density.py --data data/LL_offline.parquet --out figures/ll_low_density_projections.png
 ```
@@ -186,8 +195,8 @@ python scripts/compare_ll_runs.py --runs baseline_LL_* lagr_LL_* --aggregate
 ```
 
 ## Notes
-- LL uses the same overall penalty pipeline as the other environments, but with an LL-specific near-ground risk zone.
-- The current default LL thresholds are data-driven from the offline KDE validation pass: `altitude_max=0.21`, `speed_min=0.72`, `descent_speed_min=0.32`, `tilt_min=0.47`, `angular_speed_min=0.25`.
-- KDE density is still fit from the frozen offline dataset; the LL risk zone is now a simple thresholded approximation to the low-density pocket rather than a purely manual contour.
+- LL uses the same zone-aware data collection and penalty pipeline as the other environments.
+- The default LL zone is a compact avoidable box in position space (`x in [-0.5, 0.5]`, `y in [0.65, 0.85]`).
+- Data generation filters out in-zone transitions, creating a natural low-density "hole" in the observed states that KDE learns to penalize while leaving valid trajectories around the box.
 - The current baseline config is intentionally conservative with `p: 0.0`.
 - Evaluation uses clean reward with `500` episodes and `500` max steps per episode in the shipped LL configs.

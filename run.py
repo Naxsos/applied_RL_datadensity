@@ -77,6 +77,7 @@ def main():
         torch.manual_seed(args.seed)
     except Exception:
         torch = None
+    device = _resolve_device(torch, args.device)
 
     # --- build the four-method-agnostic pipeline ---
     from denrl.registry import build_env

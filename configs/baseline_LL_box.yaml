@@ -1,15 +1,11 @@
-# LunarLander pilot: same baseline method in a second environment.
+# LunarLander baseline with the canonical central box-zone.
+# The actual box geometry lives in configs/ll_box_zone.yaml so it is defined once.
 method: baseline
 env:
   id: LL
   continuous: true
-  offline_dataset: data/LL_legacy_offline.parquet
-  excluded_zone:
-    altitude_max: 0.21
-    speed_min: 0.72
-    descent_speed_min: 0.32
-    tilt_min: 0.47
-    angular_speed_min: 0.25
+  offline_dataset: data/LL_offline.parquet
+  excluded_zone: box
 transition_model:
   type: lstm
   frozen_checkpoint: null

@@ -189,16 +189,27 @@ class EvalCallback(BaseCallback):
             collect_obs=True,
         )
         summary = metrics.summarize_eval(records)
-        row = (f"{self.num_timesteps},{summary['true_return_mean']:.2f},"
-               f"{summary['true_return_std']:.2f},"
-               f"{summary['zone_step_frac']:.4f},{summary['zone_steps_mean']:.1f},"
-               f"{summary['upright_success_rate']:.4f},{summary['time_to_upright_mean']:.1f},"
-               f"{summary['left_path_pct']},{summary['right_path_pct']}\n")
+
+        def fmt(value, fmt_spec="{:.2f}"):
+            if value is None:
+               return "nan"
+            return fmt_spec.format(value)
+
+        row = (
+            f"{self.num_timesteps},{fmt(summary['true_return_mean']):},"
+            f"{fmt(summary['true_return_std']):},"
+            f"{fmt(summary['zone_step_frac'], '{:.4f}')},{fmt(summary['zone_steps_mean'], '{:.1f}')},"
+            f"{fmt(summary['upright_success_rate'], '{:.4f}')},{fmt(summary['time_to_upright_mean'], '{:.1f}')},"
+            f"{summary['left_path_pct'] if summary['left_path_pct'] is not None else 'nan'},"
+            f"{summary['right_path_pct'] if summary['right_path_pct'] is not None else 'nan'}\n"
+        )
         with open(self._csv_path, "a") as f:
             f.write(row)
-        print(f"  [eval @{self.num_timesteps}] return={summary['true_return_mean']:.1f} "
-              f"zone={summary['zone_step_frac']:.3f} ({summary['zone_steps_mean']:.1f} steps) "
-              f"upright={summary['upright_success_rate']:.2f}")
+        print(
+            f"  [eval @{self.num_timesteps}] return={summary['true_return_mean']:.1f} "
+            f"zone={summary['zone_step_frac']:.3f} ({summary['zone_steps_mean']:.1f} steps) "
+            f"upright={summary['upright_success_rate'] if summary['upright_success_rate'] is not None else 'nan'}"
+        )
         self._plot_trajectories(obs, summary)
 
     def _plot_trajectories(self, obs, summary):

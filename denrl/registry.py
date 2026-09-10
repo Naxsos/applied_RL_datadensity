@@ -48,7 +48,8 @@ def build_env(cfg: dict):
 
     `zone` is the env-specific excluded low-density region for this run.
     Pendulum accepts an angle band (`env.excluded_zone` + `env.zone_symmetric`);
-    LunarLander accepts a threshold dictionary under `env.excluded_zone`.
+    LunarLander accepts either the legacy near-ground threshold dictionary or a box-shaped
+    region in position space under `env.excluded_zone`.
     """
     transition_model = load_transition(cfg["transition_model"])
     cost_signal = build_cost_signal(cfg["cost_signal"], transition_model)

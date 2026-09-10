@@ -3,7 +3,7 @@ method: lagr
 env:
   id: LL
   continuous: true
-  offline_dataset: data/LL_offline.parquet
+  offline_dataset: data/LL_legacy_offline.parquet
   excluded_zone:
     altitude_max: 0.35
     speed_min: 0.9
