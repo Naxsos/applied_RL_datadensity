@@ -19,7 +19,7 @@ import pandas as pd
 
 # §7 rubric weights
 WEIGHTS = {
-    "zone_visit_rate": (0.30, "min"),        # lower better
+    "zone_step_frac": (0.30, "min"),        # lower better
     "true_return_mean": (0.25, "max"),       # higher better
     "robustness_score": (0.20, "max"),
     "fits_local": (0.15, "max"),
@@ -45,7 +45,7 @@ def add_robustness(df: pd.DataFrame) -> dict:
     scores = {}
     for method, g in df.groupby("method"):
         # mean over seeds per knob value, then spread across knob values
-        per_knob = (g.groupby("knob_value")[["true_return_mean", "zone_visit_rate"]]
+        per_knob = (g.groupby("knob_value")[["true_return_mean", "zone_step_frac"]]
                     .mean().reset_index().to_dict("records"))
         scores[method] = robustness_score(per_knob)
     return scores
@@ -61,7 +61,7 @@ def normalize(series, direction):
 
 def build_decision_table(df: pd.DataFrame) -> pd.DataFrame:
     agg = df.groupby("method").agg(
-        zone_visit_rate=("zone_visit_rate", "mean"),
+        zone_step_frac=("zone_step_frac", "mean"),
         true_return_mean=("true_return_mean", "mean"),
         fits_local=("fits_local", "mean"),
         cost_vs_forecast_err_corr=("cost_vs_forecast_err_corr", "mean"),
@@ -79,7 +79,7 @@ def build_decision_table(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def to_markdown(agg: pd.DataFrame) -> str:
-    cols = ["zone_visit_rate", "true_return_mean", "robustness_score",
+    cols = ["zone_step_frac", "true_return_mean", "robustness_score",
             "fits_local", "cost_vs_forecast_err_corr", "wall_clock_train_s", "weighted_total"]
     lines = ["# Decision Table\n", "| method | " + " | ".join(cols) + " |",
              "|" + "---|" * (len(cols) + 1)]

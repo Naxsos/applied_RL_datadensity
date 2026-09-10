@@ -36,22 +36,32 @@ class CostSignal(ABC):
 class KDEDensityCost(CostSignal):
     """Paper baseline: KDE density -> penalize LOW density (backward-looking).
 
-    cost = 1 - clip(density / density_ref, 0, 1)
+    threshold_mode controls how the threshold is applied:
+    - "binary" (default): cost = 1 if density < threshold, else 0.
+    - "continuous": density >= threshold -> cost = 0,
+                    density < threshold -> cost = clip(1 - density/threshold, 0, 1).
+      Gives gradient info for Lagrangian α while keeping the safe path penalty-free.
+    When threshold is None: cost = clip(1 - density/ref, 0, 1) (pure continuous).
     """
 
     def __init__(self, bandwidth: float = 0.1, ref_percentile: float = 5.0,
-                 max_fit_points: int = 25_000):
+                 max_fit_points: int = 25_000, threshold: float | None = None,
+                 threshold_mode: str = "binary"):
         self.bandwidth = bandwidth
         self.ref_percentile = ref_percentile
         self.max_fit_points = int(max_fit_points)
+        self.threshold = threshold
+        self.threshold_mode = threshold_mode
         self._kde = None
         self._ref = 1.0
         self.n_fit_points = 0
 
     @staticmethod
     def _encode(obs):
-        # positional encoding of the pendulum state (cosθ, sinθ, θ̇ already in obs)
-        return np.atleast_2d(np.asarray(obs, dtype=float))
+        # position only (cosθ, sinθ) — dropping θ̇ so the KDE measures WHERE
+        # on the circle the data is, not how fast. High-velocity states are sparse
+        # everywhere in the upper half, which drowns out the zone signal.
+        return np.atleast_2d(np.asarray(obs, dtype=float)[..., :2])
 
     def fit(self, dataset):
         from sklearn.neighbors import KernelDensity
@@ -82,7 +92,14 @@ class KDEDensityCost(CostSignal):
         return float(np.exp(self._kde.score_samples(self._encode(obs))[0]))
 
     def cost(self, obs, action) -> float:
-        return float(np.clip(1.0 - self.raw(obs, action) / self._ref, 0.0, 1.0))
+        density = self.raw(obs, action)
+        if self.threshold is not None:
+            if self.threshold_mode == "continuous":
+                if density >= self.threshold:
+                    return 0.0
+                return float(np.clip(1.0 - density / self.threshold, 0.0, 1.0))
+            return 1.0 if density < self.threshold else 0.0
+        return float(np.clip(1.0 - density / self._ref, 0.0, 1.0))
 
 
 class _VarianceCost(CostSignal):
