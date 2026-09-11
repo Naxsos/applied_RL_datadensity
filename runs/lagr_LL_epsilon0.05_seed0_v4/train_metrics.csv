@@ -1,0 +1,3 @@
+timestep,true_return_mean,true_return_std,zone_step_frac,zone_steps_mean,upright_success_rate,time_to_upright_mean,left_path_pct,right_path_pct
+10000,-40.16,47.35,0.0621,30.6,nan,nan,nan,nan
+20000,30.48,43.01,0.2774,136.1,nan,nan,nan,nan
