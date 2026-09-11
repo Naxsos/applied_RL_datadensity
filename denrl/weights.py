@@ -164,6 +164,10 @@ class EvalCallback(BaseCallback):
         self.n_episodes = n_episodes
         self.max_steps = max_steps
         self._csv_path = None
+        self.env_is_ll = (
+            getattr(getattr(clean_env, "unwrapped", None), "spec", None) is not None
+            and getattr(getattr(clean_env, "unwrapped", None).spec, "id", "") == "LunarLander-v3"
+        )
 
     def _on_training_start(self):
         from pathlib import Path
@@ -205,10 +209,16 @@ class EvalCallback(BaseCallback):
         )
         with open(self._csv_path, "a") as f:
             f.write(row)
+        success_label = "landing" if self.env_is_ll else "upright"
+        success_value = (
+            summary.get('landing_success_rate')
+            if self.env_is_ll
+            else summary.get('upright_success_rate')
+        )
         print(
             f"  [eval @{self.num_timesteps}] return={summary['true_return_mean']:.1f} "
             f"zone={summary['zone_step_frac']:.3f} ({summary['zone_steps_mean']:.1f} steps) "
-            f"upright={summary['upright_success_rate'] if summary['upright_success_rate'] is not None else 'nan'}"
+            f"{success_label}={success_value if success_value is not None else 'nan'}"
         )
         self._plot_trajectories(obs, summary)
 
