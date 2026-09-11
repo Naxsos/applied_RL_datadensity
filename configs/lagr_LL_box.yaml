@@ -1,15 +1,11 @@
-# LunarLander pilot: same baseline method in a second environment.
-method: baseline
+# LunarLander Lagrangian run with the canonical central box-zone.
+# The actual box geometry lives in configs/ll_box_zone.yaml so it is defined once.
+method: lagr
 env:
   id: LL
   continuous: true
-  offline_dataset: data/LL_legacy_offline.parquet
-  excluded_zone:
-    altitude_max: 0.21
-    speed_min: 0.72
-    descent_speed_min: 0.32
-    tilt_min: 0.47
-    angular_speed_min: 0.25
+  offline_dataset: data/LL_offline.parquet
+  excluded_zone: box
 transition_model:
   type: lstm
   frozen_checkpoint: null
@@ -20,8 +16,13 @@ cost_signal:
   bandwidth: 0.25
   ref_percentile: 5.0
 weight:
-  type: fixed
-  p: 2.0
+  type: lagrangian
+  constraint: zone
+  epsilon: 0.05
+  eta_alpha: 0.1
+  alpha_init: 1.0
+  alpha_max: null
+  update_freq: 500
 agent:
   algo: sac
   learning_rate: 0.0003

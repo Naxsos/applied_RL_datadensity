@@ -44,6 +44,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from matplotlib.patches import Rectangle
 
 # Pendulum-specific imports — used only when env is detected as Pendulum
 _PENDULUM_ENV_IDS = {"E1", "E2", "E3"}
@@ -124,6 +125,20 @@ def _collect_obs(run_dir: Path, n_episodes: int, seed: int, deterministic: bool 
 # ---------------------------------------------------------------------------
 
 def _draw_zone_arc(ax, zone, color="#CC0000", alpha=0.18):
+    if hasattr(zone, "zone_type") and getattr(zone, "zone_type") == "box":
+        rect = Rectangle(
+            (zone.x_min, zone.y_min),
+            zone.x_max - zone.x_min,
+            zone.y_max - zone.y_min,
+            facecolor=color,
+            edgecolor=color,
+            alpha=alpha,
+            linewidth=1.2,
+            zorder=2,
+        )
+        ax.add_patch(rect)
+        return
+
     def _wedge(lo, hi):
         thetas = np.linspace(lo, hi, 200)
         xs, ys = np.sin(thetas), np.cos(thetas)
@@ -133,7 +148,7 @@ def _draw_zone_arc(ax, zone, color="#CC0000", alpha=0.18):
         ax.plot(xs, ys, color=color, lw=1.2, alpha=0.6, zorder=3)
 
     _wedge(zone.lo, zone.hi)
-    if zone.symmetric:
+    if getattr(zone, "symmetric", False):
         _wedge(-zone.hi, -zone.lo)
 
 
@@ -185,21 +200,31 @@ def plot_trajectory_snapshot(obs: np.ndarray, zone, save_path, title: str = "",
     matplotlib.use("Agg")
 
     fig, ax = plt.subplots(figsize=(4.5, 4.5))
-    xs, ys = obs[:, 1], obs[:, 0]  # sin θ, cos θ
     color = METHOD_COLOR.get(method, "#333333")
     cmap = mcolors.LinearSegmentedColormap.from_list("white_to_method", ["#ffffff", color])
 
-    ax.hexbin(xs, ys, gridsize=40, cmap=cmap, linewidths=0.2,
-              mincnt=1, bins="log", zorder=1)
+    if hasattr(zone, "zone_type") and getattr(zone, "zone_type") == "box":
+        xs, ys = obs[:, 0], obs[:, 1]
+        ax.hexbin(xs, ys, gridsize=40, cmap=cmap, linewidths=0.2,
+                 mincnt=1, bins="log", zorder=1)
+        _draw_zone_arc(ax, zone)
+        ax.set_xlabel("x", fontsize=9)
+        ax.set_ylabel("y", fontsize=9)
+        ax.set_xlim(min(xs.min(), zone.x_min) - 0.2, max(xs.max(), zone.x_max) + 0.2)
+        ax.set_ylim(min(ys.min(), zone.y_min) - 0.1, max(ys.max(), zone.y_max) + 0.1)
+    else:
+        xs, ys = obs[:, 1], obs[:, 0]  # sin θ, cos θ
+        ax.hexbin(xs, ys, gridsize=40, cmap=cmap, linewidths=0.2,
+                 mincnt=1, bins="log", zorder=1)
+        _draw_zone_arc(ax, zone)
+        th = np.linspace(0, 2 * np.pi, 300)
+        ax.plot(np.sin(th), np.cos(th), "k-", lw=0.6, alpha=0.3, zorder=4)
+        ax.set_xlim(1.15, -1.15)
+        ax.set_ylim(-1.15, 1.15)
+        ax.set_aspect("equal")
+        ax.set_xlabel("sin θ", fontsize=9)
+        ax.set_ylabel("cos θ", fontsize=9)
 
-    _draw_zone_arc(ax, zone)
-    th = np.linspace(0, 2 * np.pi, 300)
-    ax.plot(np.sin(th), np.cos(th), "k-", lw=0.6, alpha=0.3, zorder=4)
-    ax.set_xlim(1.15, -1.15)
-    ax.set_ylim(-1.15, 1.15)
-    ax.set_aspect("equal")
-    ax.set_xlabel("sin θ", fontsize=9)
-    ax.set_ylabel("cos θ", fontsize=9)
     ax.set_title(title, fontsize=9, color=color, fontweight="bold")
     ax.tick_params(labelsize=8)
 

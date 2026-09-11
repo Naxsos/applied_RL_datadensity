@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Generate the frozen offline dataset (paper: 2000 episodes, random actions,
-episode terminated on entering the excluded zone) -> data/<env>_offline.parquet.
+with in-zone transitions filtered out while the episode continues) -> data/<env>_offline.parquet.
+
+In-zone transitions are dropped from the offline set for all environments (Pendulum and LunarLander),
+creating a low-density "hole" in the observed data while preserving valid trajectories around it.
 
     python scripts/generate_offline_data.py --env E1 --episodes 2000
+    python scripts/generate_offline_data.py --env LL --episodes 2000 --continuous
 
 Columns: obs0..,act0..,next0..  (flat, so run.py's loader picks them up by prefix).
 For E2 (uncertainty≠density) replace the env + inject the chaotic band here.
@@ -61,11 +65,10 @@ def main():
         lo, hi = E3_ZONE
     elif args.env == "LL":
         env = gym.make("LunarLander-v3", continuous=args.continuous)
-    zone_cfg = {
-        "id": args.env,
-        "excluded_zone": (lo, hi),
-        "zone_symmetric": symmetric,
-    } if args.env in ("E1", "E2", "E3") else {"id": args.env}
+    if args.env in ("E1", "E2", "E3"):
+        zone_cfg = {"id": args.env, "excluded_zone": (lo, hi), "zone_symmetric": symmetric}
+    else:
+        zone_cfg = {"id": args.env, "excluded_zone": None}
     zone = resolve_zone(zone_cfg)
     # Data collection deliberately starts uniformly over the circle, even though the
     # AGENT starts at rest (env.start_state, spec §3). The offline set has to cover the
@@ -84,8 +87,13 @@ def main():
         for t in range(args.max_steps):
             action = env.action_space.sample()
             nxt, _, term, trunc, _ = env.step(action)
-            if args.env in ("E1", "E2", "E3") and zone.contains(nxt):
-                break
+            if zone.contains(nxt):
+                # Keep the episode alive and allow the agent to fly through the zone,
+                # but do not store the in-zone transition in the offline dataset.
+                obs = nxt
+                if term or trunc:
+                    break
+                continue
             obs_arr = np.asarray(obs, dtype=np.float32).reshape(-1)
             act_arr = np.asarray(action, dtype=np.float32).reshape(-1)
             nxt_arr = np.asarray(nxt, dtype=np.float32).reshape(-1)
