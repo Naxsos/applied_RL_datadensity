@@ -8,7 +8,7 @@ producing behavior that looks good under the learned dynamics but fails, or is u
 the true dynamics. This is especially problematic when parts of state space are inherently
 under-sampled in the offline dataset -- not due to a data collection oversight, but because
 those regions are rare, costly, or dangerous to visit in the first place.
-
+\
 A standard mitigation is to penalize the reward with a data-density cost signal: states or
 state-action pairs that are far from the training distribution incur an additional cost,
 discouraging the policy from visiting them. Lantz et al. @lantz2025 scale this penalty by a fixed coefficient $p$, selected manually and
@@ -18,7 +18,7 @@ large, and the penalty dominates the task objective and cripples performance els
 the "right" value of $p$ depends on the environment, the task reward's scale, and the shape of
 the excluded region, it must be re-tuned by hand whenever any of those change, and it cannot
 adapt over the course of training as the policy's visitation distribution shifts.
-
+\
 We instead treat staying out of the low-data region as a constraint rather than as an
 unconstrained penalty term, and cast the problem as a constrained Markov decision process. The
 penalty weight becomes a Lagrange multiplier, updated online via dual ascent so that it grows
@@ -30,7 +30,7 @@ against the fixed-weight baseline under otherwise identical conditions: the same
 cost signal, the same agent, and the same evaluation protocol, so that any difference in
 outcome is attributable to the weighting scheme alone.
 
-== Contributions Gerrit
+= Contributions
 
 - A shared, pluggable reward-wrapper implementation in which the baseline and Lagrangian
   conditions differ *only* in the weight component -- same cost signal, same agent, same
