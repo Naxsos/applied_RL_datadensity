@@ -1,23 +1,17 @@
 = Methodology
 
-#let optional-internal-link(target, body) = context {
-  if query(target).len() > 0 {
-    link(target, body)
-  } else {
-    body
-  }
-}
-
 == Environments: Jonas: Lunar Lander
-- *Primary: Pendulum swing-up with excluded zone.* 
+#v(-10pt)
+\
+*Primary: Pendulum swing-up with excluded zone.*
 The Pendulum experiments are based on the continuous-control `Pendulum-v1`
 environment. The observation is
 $s_t = (cos theta_t, sin theta_t, dot(theta)_t)$, and the action is a continuous
 torque $u_t in [-2, 2]$. The objective is to bring the pendulum to the upright
 position ($theta = 0$) starting from the default `Pendulum-v1` reset distribution.
-
-Safety is represented by an excluded angular interval defined on the signed
-angle, i.e., the interval is one-sided and is not mirrored using $abs(theta)$.
+#v(-10pt)
+\
+Safety is represented by an excluded angular interval defined on the signed angle, i.e., the interval is one-sided and is not mirrored using $abs(theta)$.
 Environment E1 uses
 
 $
@@ -31,16 +25,19 @@ $
   theta in [pi / 4, 3 pi / 4]
   = [45 degree, 135 degree].
 $
-
+#v(-10pt)
+\
 E1 and E3 share the same Pendulum dynamics and differ only in the geometry of
 the excluded region. E3 was introduced to test whether a penalty configuration
 that works for E1 remains effective under a more restrictive safety region.
-
+#v(-10pt)
+\
 A reference-policy analysis confirmed a
 zone-free swing-up for E1. For the current E3 definition, however, no zone-free
 path was found, so its feasibility for a fair safety comparison has not yet
 been established.
-
+#v(-10pt)
+\
 - *Generalization: LunarLander.*
 The LunarLander generalization task uses the continuous-control `LunarLander-v3` environment,
 a standard Gymnasium benchmark for contact-rich control problems in which the agent must
@@ -50,7 +47,8 @@ $(x, y)$ denotes horizontal and vertical position, $dot(x), dot(y)$ are velociti
 $theta$ is attitude angle, $dot(theta)$ is angular velocity, and $l, r in {0, 1}$ indicate left and right
 leg ground contact. The action is a discrete selection from four thrusters (no action, main engine, left-only,
 right-only). The objective is to land smoothly at the target position $(0, 0)$ @gymnasium_lunar_lander.
-
+#v(-10pt)
+\
 As illustrated in the offline-data figure (@fig-ll-offline-zone), an excluded box-shaped
 region in $(x, y)$ position space is constructed as an artificial low-density zone rather than
 as a literal no-landing restriction in the environment. All offline trajectories that enter
@@ -60,7 +58,8 @@ with effectively zero observed samples:
 $
   (x, y) in [-0.2, 0.2] times [0.6, 1.0].
 $
-
+#v(-10pt)
+\
 This box is therefore not a hard airspace exclusion in the simulator; it is a dataset-design
 feature that induces a low-data region in the offline dataset. The region remains navigable by
 steering left or right, analogous to the pendulum's excluded angular interval. Unlike the
@@ -87,7 +86,8 @@ means and standard deviations across $>=5$ independent random seeds per configur
 //TODO: add a table of hyperparameters and their values.
 
 == Methods compared
-
+#v(-10pt)
+\
 *Baseline.*
 The baseline uses a KDE-based density cost to penalize states that are poorly
 represented in the offline dataset. The penalty weight $p$ is fixed during
@@ -96,7 +96,8 @@ training and is evaluated over a predefined parameter sweep:
 $
   r_"train" = r_"task" - p dot c(s_t).
 $
-
+#v(-10pt)
+\
 *Lagrangian method (`lagr`).*
 The Lagrangian method uses the same KDE-based cost as the baseline, but replaces
 the fixed penalty weight $p$ with a multiplier $alpha$ that is adapted during
@@ -106,7 +107,8 @@ be penalized, the method defines a maximum tolerated constraint value $epsilon$:
 $
   C(pi) <= epsilon,
 $
-
+#v(-10pt)
+\
 where $C(pi)$ denotes the expected accumulated KDE cost under policy $pi$.
 The constrained optimization problem can be written as
 
@@ -115,7 +117,8 @@ $
   quad "subject to" quad
   C(pi) <= epsilon.
 $
-
+#v(-10pt)
+\
 Using the Lagrangian formulation, the training objective becomes
 
 $
@@ -123,41 +126,38 @@ $
   =
   J(pi) - alpha (C(pi) - epsilon),
 $
-
+#v(-10pt)
+\
 with $alpha >= 0$. During training, the multiplier is updated according to the
 observed constraint violation:
 
 $
   alpha <- max(0, alpha + eta_alpha (C(pi) - epsilon)).
 $
-
+#v(-10pt)
+\
 If the constraint is violated, $alpha$ increases and the agent is penalized
 more strongly for entering low-density regions. If the constraint is satisfied,
 $alpha$ can decrease. The method can therefore adapt the penalty strength
 automatically instead of relying on a fixed manually selected value of $p$.
-
-Two constraint formulations are supported:
-- *Zone-based constraint* ($C(pi) =$ zone step fraction): measures the fraction of training
-  steps within the excluded region. $epsilon$ is then an allowed violation rate (e.g.,
-  $epsilon = 0.1$ means $<=10$% of steps may be in the zone). Used for LunarLander.
-- *Cost-based constraint* ($C(pi) =$ mean KDE cost): measures the average normalized cost
-  signal accumulated during training. $epsilon$ is an absolute cost threshold (O(0.01-0.1)).
-  Used for Pendulum. Both quantities are logged regardless of which drives the dual step,
-  enabling diagnosis of either formulation.
-
+#v(-10pt)
+\
 *Uncertainty-based methods.*
-
+#v(-10pt)
+\
 The ensemble method (`ens`) trains multiple transition models and uses the
 disagreement between their next-state predictions as an estimate of epistemic
 uncertainty. States with high model disagreement therefore receive a larger
 penalty.
-
+#v(-10pt)
+\
 The Bayesian neural network method (`bnn`) follows the same idea, but estimates
 uncertainty using a single Bayesian transition model instead of several
 independently trained models.
-
+#v(-10pt)
+\
 All four methods were evaluated in an initial exploratory experiment
-(see Appendix: #optional-internal-link(<appendix-pilot-experiment>, [Initial exploratory experiment])).
+(see Appendix: #(<appendix-pilot-experiment>, [Initial exploratory experiment])).
 The ensemble and BNN methods showed weaker preliminary performance than the
 Lagrangian approach. Based on these initial findings, the main comparison was
 therefore restricted to the Lagrangian method and the fixed-weight baseline.
@@ -171,13 +171,15 @@ therefore restricted to the Lagrangian method and the fixed-weight baseline.
 - Fixed start state, fixed episode length, greedy (deterministic) action evaluation.
 
 == Metrics <sec-metrics>
-
+#v(-10pt)
+\
 All metrics are computed from deterministic evaluation episodes in the clean, unpenalized
 environment. Episode-level quantities are calculated for each episode and then averaged within
 a run; the reported $plus.minus$ values aggregate the corresponding run-level means across
 seeds. The episode length is the number of transitions actually executed, so terminated and
 truncated episodes do not contribute additional padded steps.
-
+#v(-10pt)
+\
 *Safety and route diagnostics (lower is better where applicable).*
 - _Zone visit rate_: the fraction of evaluation episodes that contain at least one observed
   state in the excluded zone. This is an episode-level measure; a single-step boundary crossing
@@ -196,7 +198,8 @@ truncated episodes do not contribute additional padded steps.
   determines the code's route label: positive travel is recorded as ``right'' and non-positive
   travel as ``left''. The two percentages are descriptive route diagnostics, not additional
   constraint values, and are undefined for LunarLander.
-
+#v(-10pt)
+\
 *Task performance (higher is better unless stated otherwise).*
 - _True return_: the undiscounted sum of clean task rewards over an episode. The evaluator
   stores the episode mean and standard deviation for each run; tables compare the means across
@@ -214,14 +217,16 @@ truncated episodes do not contribute additional padded steps.
   reward and episodes ending at the 500-step limit without termination, respectively. These
   categories are mutually exclusive with strict landing and partition the evaluated episodes.
 - _Mean episode length_: the average number of executed transitions.
-
+#v(-10pt)
+\
 *Constraint diagnostics (Lagrangian only).* The implementation logs the final multiplier
 $alpha$, its trajectory over dual updates, the constraint value $C$, the target $epsilon$, and
 whether the final update satisfies $C <= epsilon$. When the Lagrangian uses the ``zone''
 constraint, $C$ is the fraction of *training steps* inside the excluded zone; when it uses the
 ``cost'' constraint, $C$ is the mean normalized cost signal. Neither quantity is the
 per-episode zone visit rate reported at evaluation.
-
+#v(-10pt)
+\
 *Robustness and compute.* For each method, robustness is assessed from the spread of clean
 return and zone metrics across its own tuning-parameter sweep ($p$ for the baseline and
 $epsilon$ for the Lagrangian). Wall-clock training time is recorded with evaluation excluded;

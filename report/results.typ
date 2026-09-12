@@ -75,7 +75,8 @@
     the zone depth-weighted metric.
   ],
 ) <tab-pendulum-pooled>
-
+#v(-10pt)
+\
 Lagrangian weighting matches or beats the pooled baseline on every metric in
 @tab-pendulum-pooled: $4.2 times$ shallower zone penetration, higher return,
 perfect and far more consistent upright success, and faster swing-up, at
@@ -84,7 +85,7 @@ the constraint is violated and decays toward 0 once $C < epsilon$, auto-tuning
 the penalty instead of relying on a hand-picked $p$.
 
 #figure(
-  align(center)[#image("../figures/alpha_trajectory.png", width: 100%)],
+  align(center)[#image("figures/alpha_trajectory.png", width: 100%)],
   caption: [
     Lagrangian dual variable $alpha$ (left) and constraint value $C$ (right) over
     training, lagr $epsilon = 0.01$, pendulum E1, 6 seeds (thin lines), mean $plus.minus$
@@ -93,7 +94,8 @@ the penalty instead of relying on a hand-picked $p$.
     can't replicate.
   ],
 ) <fig-alpha-trajectory>
-
+#v(-10pt)
+\
 Early in training the policy has not yet learned to avoid the excluded band,
 so the mean constraint value $C$ spikes to roughly $0.16$ -- sixteen times the
 target $epsilon = 0.01$ -- around step 5k, while the underlying random-ish
@@ -110,8 +112,8 @@ visible as the noisy individual $C$ traces that briefly poke back above
 $epsilon$ in the right panel. No baseline weight is adjusted this way: a fixed
 $p$ pays the same cost throughout training regardless of whether the
 constraint is already satisfied.
-
-
+#v(-10pt)
+\
 The four panels in @fig-vis-trajectories trace the same route-around-vs-through trade-off the left/right
 path split quantifies. Under $p=2$ the density visibly overlaps the red wedge
 on both sides, and the swing direction is nearly a coin flip across seeds
@@ -127,7 +129,7 @@ entries stay hugging the boundary, barely crossing the red line before turning
 back.
 
 #figure(
-  align(center)[#image("../figures/vis_trajectories.png", width: 110%)],
+  align(center)[#image("figures/vis_trajectories.png", width: 110%)],
   caption: [
     Visited states over the unit circle ($sin theta$, $cos theta$), hexbin density
     across all 6 seeds per group, pendulum E1. Red wedge marks the excluded zone.
@@ -135,8 +137,7 @@ back.
     with lagr's path visibly hugging the boundary more tightly than $p=10$'s.
   ],
 ) <fig-vis-trajectories>
-
-
-
-- LunarLander: same table and plots, framed as a generalization check -- does the pendulum
+#v(-10pt)
+\
+LunarLander: same table and plots, framed as a generalization check -- does the pendulum
   ranking hold outside that setting?

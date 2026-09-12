@@ -1,5 +1,6 @@
 = Discussion Gerrit: Pendulum 
-
+#v(-10pt)
+\
 - Interpretation: why learning $alpha$ outperforms a fixed $p$ -- it adapts to how much penalty
   is actually needed to satisfy the constraint, rather than requiring a priori knowledge.
 - Where the Lagrangian underperforms or adds complexity: extra hyperparameters ($eta$,
