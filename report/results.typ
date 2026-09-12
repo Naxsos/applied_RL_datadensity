@@ -85,7 +85,7 @@ the constraint is violated and decays toward 0 once $C < epsilon$, auto-tuning
 the penalty instead of relying on a hand-picked $p$.
 
 #figure(
-  align(center)[#image("figures/alpha_trajectory.png", width: 100%)],
+  align(center)[#image("../figures/alpha_trajectory.png", width: 100%)],
   caption: [
     Lagrangian dual variable $alpha$ (left) and constraint value $C$ (right) over
     training, lagr $epsilon = 0.01$, pendulum E1, 6 seeds (thin lines), mean $plus.minus$
@@ -129,7 +129,7 @@ entries stay hugging the boundary, barely crossing the red line before turning
 back.
 
 #figure(
-  align(center)[#image("figures/vis_trajectories.png", width: 110%)],
+  align(center)[#image("../figures/vis_trajectories.png", width: 100%)],
   caption: [
     Visited states over the unit circle ($sin theta$, $cos theta$), hexbin density
     across all 6 seeds per group, pendulum E1. Red wedge marks the excluded zone.

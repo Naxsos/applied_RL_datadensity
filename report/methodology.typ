@@ -1,14 +1,26 @@
 = Methodology
 
-== Environments: Jonas: Lunar Lander
+#let optional-internal-link(target, body) = context {
+  if query(target).len() > 0 {
+    link(target, body)
+  } else {
+    body
+  }
+}
+
+== Environments
 #v(-10pt)
 \
+
 *Primary: Pendulum swing-up with excluded zone.*
 The Pendulum experiments are based on the continuous-control `Pendulum-v1`
 environment. The observation is
 $s_t = (cos theta_t, sin theta_t, dot(theta)_t)$, and the action is a continuous
-torque $u_t in [-2, 2]$. The objective is to bring the pendulum to the upright
-position ($theta = 0$) starting from the default `Pendulum-v1` reset distribution.
+torque $u_t in [-2, 2]$. The objective is to bring the pendulum to the upright position
+($theta = 0$), starting from a resting configuration near
+($theta = pi$ and $dot(theta) = 0$), with small random perturbations
+of magnitude $0.05$ applied to the initial state.
+
 #v(-10pt)
 \
 Safety is represented by an excluded angular interval defined on the signed angle, i.e., the interval is one-sided and is not mirrored using $abs(theta)$.
@@ -38,7 +50,8 @@ path was found, so its feasibility for a fair safety comparison has not yet
 been established.
 #v(-10pt)
 \
-- *Generalization: LunarLander.*
+
+*Generalization: LunarLander.*
 The LunarLander generalization task uses the continuous-control `LunarLander-v3` environment,
 a standard Gymnasium benchmark for contact-rich control problems in which the agent must
 land a craft on a pad while preserving stability @towers2024gymnasium.
@@ -70,24 +83,15 @@ requires passing near it en route to the landing pad, mirroring the sparse-cover
 used in prior density-penalized offline RL work @lantz2025.
 
 #figure(
-  image("../figures/ll_offline_with_zone.png", width: 75%),
+  image("../figures/ll_offline_with_zone.png", width: 100%),
   caption: [LunarLander offline trajectories with excluded box-zone visualization.
   The red rectangle marks the excluded region in position space where the agent should avoid lingering.],
 ) <fig-ll-offline-zone>
 
-Across both methods and all environments, the following components are held fixed to isolate
-the effect of the weighting strategy. The transition model is an LSTM with frozen checkpoint
-set to null, falling back to the true simulator dynamics. The cost signal is KDE density-based
-with bandwidth 0.1, reference percentile 5.0, and a threshold of 0.025 below which the penalty
-is flat. The SAC algorithm is configured with SB3 defaults. Training runs for 150,000 steps on both Pendulum and LunarLander. Evaluation occurs on the clean,
-unpenalized reward over 200 episodes, with
-maximum episode lengths of 200 steps (Pendulum) and 500 steps (LunarLander). All results report
-means and standard deviations across $>=5$ independent random seeds per configuration.
-//TODO: add a table of hyperparameters and their values.
-
 == Methods compared
 #v(-10pt)
 \
+
 *Baseline.*
 The baseline uses a KDE-based density cost to penalize states that are poorly
 represented in the offline dataset. The penalty weight $p$ is fixed during
@@ -98,6 +102,7 @@ $
 $
 #v(-10pt)
 \
+
 *Lagrangian method (`lagr`).*
 The Lagrangian method uses the same KDE-based cost as the baseline, but replaces
 the fixed penalty weight $p$ with a multiplier $alpha$ that is adapted during
@@ -142,33 +147,93 @@ $alpha$ can decrease. The method can therefore adapt the penalty strength
 automatically instead of relying on a fixed manually selected value of $p$.
 #v(-10pt)
 \
+
 *Uncertainty-based methods.*
-#v(-10pt)
-\
+
 The ensemble method (`ens`) trains multiple transition models and uses the
 disagreement between their next-state predictions as an estimate of epistemic
 uncertainty. States with high model disagreement therefore receive a larger
 penalty.
 #v(-10pt)
 \
+
 The Bayesian neural network method (`bnn`) follows the same idea, but estimates
 uncertainty using a single Bayesian transition model instead of several
 independently trained models.
 #v(-10pt)
 \
+
 All four methods were evaluated in an initial exploratory experiment
-(see Appendix: #(<appendix-pilot-experiment>, [Initial exploratory experiment])).
+(see Appendix: #optional-internal-link(
+  <appendix-pilot-experiment>,
+  [Initial exploratory experiment],
+)).
 The ensemble and BNN methods showed weaker preliminary performance than the
 Lagrangian approach. Based on these initial findings, the main comparison was
 therefore restricted to the Lagrangian method and the fixed-weight baseline.
 
 
-== Training and evaluation protocol Maram <sec-protocol>
-- Offline dataset generation per environment.
-- SAC training, $N$ steps, $>=5$ seeds per cell, mean $plus.minus$ std reported.
-- Evaluation always on the clean, unpenalized reward, so methods with different training
-  objectives remain comparable.
-- Fixed start state, fixed episode length, greedy (deterministic) action evaluation.
+== Training and evaluation protocol <sec-protocol>
+*Offline dataset generation.*
+Prior to policy optimization, a fixed offline dataset was generated separately
+for each environment. Data were collected using random actions sampled from the
+corresponding action space over 2,000 episodes, with a maximum of 200 steps per
+episode. Environment resets and action sampling were seeded for reproducibility.
+
+Each interaction produced a transition $(s_t, a_t, s_(t+1))$. If the next state
+$s_(t+1)$ lay inside the environment-specific excluded region, the transition
+was not stored, while the episode continued normally unless the environment
+terminated. This created a low-density region in the offline data without
+modifying the underlying environment dynamics.
+
+The collected transitions were stored as Parquet files containing the current
+observation, action, and next observation. The datasets were not used to train
+the policy directly. Instead, they were used to fit the KDE-based safety signal
+before policy optimization. The fitted KDE was then kept fixed during training,
+assigning higher safety costs to states with low estimated data density.
+
+*Policy training and configurations.*
+For each task, the comparison consists of three fixed-weight baseline
+configurations and one adaptive Lagrangian configuration. The baseline uses
+$p in {2, 10, 30}$, with the selected penalty weight remaining constant
+throughout training. These three configurations represent different manually
+chosen levels of safety penalization.
+
+The Lagrangian method replaces the manually selected value of $p$ with a
+non-negative multiplier $alpha$. The multiplier is initialized at
+$alpha_0 = 5$ and updated every 500 environment steps using a dual learning
+rate of $eta_alpha = 10$. Its update depends on the difference between the
+observed mean safety cost and the allowed threshold $epsilon = 0.01$. When the
+constraint is violated, $alpha$ increases and the safety penalty becomes
+stronger. When the constraint is satisfied, $alpha$ can decrease. The method
+therefore adapts the penalty strength continuously instead of selecting one of
+the three predefined baseline weights.
+
+All policies are trained using the Stable-Baselines3 implementation of Soft
+Actor-Critic (SAC) with an MLP policy for 150,000 environment steps. The KDE
+safety signal uses a bandwidth of 0.1 and a binary density threshold of 0.025.
+A state receives a safety cost of 1 when its estimated density is below this
+threshold and a cost of 0 otherwise.
+
+Each of the four configurations is repeated with six independent random seeds,
+numbered 0 through 5. This produces 18 fixed-weight baseline runs and six
+Lagrangian runs, for a total of 24 runs per task. NumPy, PyTorch, and SAC use
+the same seed within each run. Within a task, all methods use the same offline
+dataset and environment construction.
+
+*Evaluation procedure.*
+During training, the original task reward is modified by the weighted KDE
+safety cost. Intermediate evaluations are performed every 10,000 training
+steps using 50 episodes. These evaluations monitor policy development without
+affecting the policy updates.
+
+Each policy is evaluated over 200 episodes, with
+a maximum length of 200 steps per episode. Evaluation is performed in a
+separate, unpenalized environment using deterministic actions. Returns are
+calculated exclusively from the original task reward, while safety is measured
+separately using the zone-visit rate and the fraction of steps spent inside the
+excluded region. The final results are aggregated across the six seeds and
+reported using the mean and standard deviation.
 
 == Metrics <sec-metrics>
 #v(-10pt)
@@ -200,6 +265,7 @@ truncated episodes do not contribute additional padded steps.
   constraint values, and are undefined for LunarLander.
 #v(-10pt)
 \
+
 *Task performance (higher is better unless stated otherwise).*
 - _True return_: the undiscounted sum of clean task rewards over an episode. The evaluator
   stores the episode mean and standard deviation for each run; tables compare the means across
