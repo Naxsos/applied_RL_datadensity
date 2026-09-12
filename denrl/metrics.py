@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Optional
 import numpy as np
 
-from .env import obs_to_theta, in_zone, PAPER_ZONE
+from .env import obs_to_theta, in_zone, zone_depth, PAPER_ZONE
 
 
 def _looks_like_lunar_lander(obs) -> bool:
@@ -42,6 +42,7 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
         obs, _ = clean_env.reset(seed=int(rng.integers(1 << 31)))
         ep_ret, entered, thetas = 0.0, False, []
         zone_steps = 0
+        depth_sum = 0.0
         landed_at: Optional[int] = None
         strict_landed = False
         crashed = False
@@ -65,6 +66,7 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
             in_z = in_zone(obs, zone)
             entered = entered or in_z
             zone_steps += int(in_z)
+            depth_sum += zone_depth(obs, zone)
             if env_is_ll:
                 if term and landed_at is None and not crashed:
                     # LunarLander-v3 does not expose landed/crashed info keys.
@@ -86,6 +88,7 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
             "entered_zone": entered,
             "zone_steps": zone_steps,
             "zone_step_frac": zone_steps / max(t + 1, 1),
+            "zone_depth_mean": depth_sum / max(t + 1, 1),
             "path": None if env_is_ll else _classify_path(thetas),
             "upright": None if env_is_ll else (upright_at is not None),
             "steps_to_upright": None if env_is_ll else (upright_at if upright_at is not None else max_steps),
@@ -118,6 +121,7 @@ def summarize_eval(records) -> dict:
     out = {
         "zone_visit_rate": float(np.mean([r["entered_zone"] for r in records])),
         "zone_step_frac": float(np.mean([r["zone_step_frac"] for r in records])),
+        "zone_depth_mean": float(np.mean([r["zone_depth_mean"] for r in records])),
         "zone_steps_mean": float(np.mean([r["zone_steps"] for r in records])),
         "left_path_pct": None if ll_mode else round(100 * n_left / max(n, 1)),
         "right_path_pct": None if ll_mode else round(100 * n_right / max(n, 1)),

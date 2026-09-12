@@ -34,6 +34,7 @@ def main():
     ap.add_argument("--step", default="final",
                     help="which traj to load: 'final' or a step number like '50000'")
     ap.add_argument("--out", default="figures/combined_traj.png")
+    ap.add_argument("--rows", type=int, default=1, help="panel grid rows (columns = ceil(n/rows))")
     args = ap.parse_args()
 
     groups = []
@@ -45,8 +46,12 @@ def main():
         groups.append((label, dirs))
 
     n = len(groups)
-    fig, axes = plt.subplots(1, n, figsize=(4.5 * n, 4.5), squeeze=False)
-    axes = axes[0]
+    rows = max(1, args.rows)
+    cols = -(-n // rows)  # ceil division
+    fig, axes = plt.subplots(rows, cols, figsize=(4.5 * cols, 4.5 * rows), squeeze=False)
+    axes = axes.flatten()
+    for ax in axes[n:]:
+        ax.axis("off")
 
     for ax, (label, dirs) in zip(axes, groups):
         # load and concatenate npy files

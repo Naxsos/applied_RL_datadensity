@@ -21,9 +21,15 @@
   objectives remain comparable.
 - Fixed start state, fixed episode length, greedy (deterministic) action evaluation.
 
-== Metrics Theresa 
+== Metrics Theresa <sec-metrics>
 - *Safety (lower is better):* zone visit rate (episode-level), zone step fraction, left/right
-  path split (route-around behavior).
+  path split (route-around behavior), zone depth-weighted step fraction (mean per-step
+  penetration depth, geometric distance from the nearest zone edge normalized to
+  $[0, 1]$ with $0$ outside the zone and $1$ at its center; folds frequency and
+  severity into one number so a policy that only clips the boundary doesn't score the
+  same as one that crosses through the center -- unlike the flat zone step fraction,
+  which the KDE cost signal's "bleeding" near the zone edge can make misleadingly
+  similar across methods that differ a lot in how deep they actually go).
 - *Task performance (higher is better):* true return mean/std, upright success rate,
   time-to-upright.
 - *Constraint behavior (Lagrangian only):* final $alpha$, $alpha$ trajectory over training,

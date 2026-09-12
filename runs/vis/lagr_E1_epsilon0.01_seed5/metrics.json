@@ -30,5 +30,6 @@
   "constraint_C_cost_mean": 0.0,
   "constraint_satisfied": true,
   "alpha_trajectory_len": 301,
-  "alpha_init": 5.0
+  "alpha_init": 5.0,
+  "zone_depth_mean": 0.0
 }

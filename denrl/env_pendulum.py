@@ -28,6 +28,22 @@ class Zone:
             theta = abs(theta)
         return self.lo <= theta <= self.hi
 
+    def depth(self, obs) -> float:
+        """Normalized penetration depth: 0 outside the zone or right at either edge,
+        rising linearly to 1 at the zone center. Combines frequency and severity when
+        averaged over steps -- a policy that only clips the edge scores near 0 per
+        step even on every entry, one that crosses the center scores near 1."""
+        theta = obs_to_theta(obs)
+        if self.symmetric:
+            theta = abs(theta)
+        if not (self.lo <= theta <= self.hi):
+            return 0.0
+        half_width = (self.hi - self.lo) / 2.0
+        if half_width <= 0:
+            return 1.0
+        center = (self.lo + self.hi) / 2.0
+        return 1.0 - abs(theta - center) / half_width
+
     def __iter__(self):
         return iter((self.lo, self.hi))
 
