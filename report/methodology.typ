@@ -1,5 +1,13 @@
 = Methodology
 
+#let optional-internal-link(target, body) = context {
+  if query(target).len() > 0 {
+    link(target, body)
+  } else {
+    body
+  }
+}
+
 == Environments: Jonas: Lunar Lander
 - *Primary: Pendulum swing-up with excluded zone.* 
 The Pendulum experiments are based on the continuous-control `Pendulum-v1`
@@ -99,10 +107,11 @@ The Bayesian neural network method (`bnn`) follows the same idea, but estimates
 uncertainty using a single Bayesian transition model instead of several
 independently trained models.
 
-The ensemble and BNN methods were evaluated in an initial exploratory
-experiment (see dependencies). Both showed weaker preliminary performance than the
-Lagrangian approach. Based on these initial results, we chose to focus the main
-comparison on the Lagrangian method and the fixed-weight baseline.
+All four methods were evaluated in an initial exploratory experiment
+(see Appendix: #optional-internal-link(<appendix-pilot-experiment>, [Initial exploratory experiment])).
+The ensemble and BNN methods showed weaker preliminary performance than the
+Lagrangian approach. Based on these initial findings, the main comparison was
+therefore restricted to the Lagrangian method and the fixed-weight baseline.
 
 
 == Training and evaluation protocol Maram 
