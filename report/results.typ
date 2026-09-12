@@ -1,4 +1,4 @@
-= Results Jonas: Lunar Lander; Gerrit: Pendulum
+= Results Jonas: Lunar Lander; Gerrit: Pendulum <sec-results>
 
 == Pendulum (E1): baseline vs. Lagrangian
 

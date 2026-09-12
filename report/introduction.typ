@@ -11,8 +11,7 @@ those regions are rare, costly, or dangerous to visit in the first place.
 
 A standard mitigation is to penalize the reward with a data-density cost signal: states or
 state-action pairs that are far from the training distribution incur an additional cost,
-discouraging the policy from visiting them. #emph[(TODO: cite the reference paper, ES2025-194,
-once entered in refs.bib)] scales this penalty by a fixed coefficient $p$, chosen by hand and
+discouraging the policy from visiting them. Lantz et al. @lantz2025 scale this penalty by a fixed coefficient $p$, selected manually and
 held constant for the duration of training. This works, but the coefficient carries all of the
 burden: too small, and the policy still routes through the excluded, low-data region; too
 large, and the penalty dominates the task objective and cripples performance elsewhere. Because

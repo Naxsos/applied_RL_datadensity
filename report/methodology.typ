@@ -114,28 +114,67 @@ Lagrangian approach. Based on these initial findings, the main comparison was
 therefore restricted to the Lagrangian method and the fixed-weight baseline.
 
 
-== Training and evaluation protocol Maram 
+== Training and evaluation protocol Maram <sec-protocol>
 - Offline dataset generation per environment.
 - SAC training, $N$ steps, $>=5$ seeds per cell, mean $plus.minus$ std reported.
 - Evaluation always on the clean, unpenalized reward, so methods with different training
   objectives remain comparable.
 - Fixed start state, fixed episode length, greedy (deterministic) action evaluation.
 
-== Metrics Theresa <sec-metrics>
-- *Safety (lower is better):* zone visit rate (episode-level), zone step fraction, left/right
-  path split (route-around behavior), zone depth-weighted step fraction (mean per-step
-  penetration depth, geometric distance from the nearest zone edge normalized to
-  $[0, 1]$ with $0$ outside the zone and $1$ at its center; folds frequency and
-  severity into one number so a policy that only clips the boundary doesn't score the
-  same as one that crosses through the center -- unlike the flat zone step fraction,
-  which the KDE cost signal's "bleeding" near the zone edge can make misleadingly
-  similar across methods that differ a lot in how deep they actually go).
-- *Task performance (higher is better):* true return mean/std, upright success rate,
-  time-to-upright.
-- *Constraint behavior (Lagrangian only):* final $alpha$, $alpha$ trajectory over training,
-  constraint value $C$ vs. $epsilon$, constraint-satisfied flag.
-- *Robustness / tunability:* spread of (return, zone rate) across each method's own knob sweep;
-  a flat spread means the method is easy to tune -- the Lagrangian's expected advantage.
-- *Compute:* wall-clock training time, where relevant to a claim.
-- For LunarLander: same categories, redefined for that environment's task-success and
-  "excluded zone" analogue.
+== Metrics <sec-metrics>
+
+All metrics are computed from deterministic evaluation episodes in the clean, unpenalized
+environment. Episode-level quantities are calculated for each episode and then averaged within
+a run; the reported $plus.minus$ values aggregate the corresponding run-level means across
+seeds. The episode length is the number of transitions actually executed, so terminated and
+truncated episodes do not contribute additional padded steps.
+
+*Safety and route diagnostics (lower is better where applicable).*
+- _Zone visit rate_: the fraction of evaluation episodes that contain at least one observed
+  state in the excluded zone. This is an episode-level measure; a single-step boundary crossing
+  counts as a visit.
+- _Zone step fraction_: for episode $e$, $T_e^(-1) sum_(t=1)^(T_e) z_(e,t)$, where
+  $z_(e,t) = bb(1)[s_(e,t) in Z]$. It is the average fraction of executed steps spent in the
+  zone and is distinct from the episode-level visit rate used above.
+- _Zone depth-weighted step fraction_: the episode mean of an environment-specific depth
+  function $d(s) in [0, 1]$. For the pendulum, $d$ is zero outside the angular band and at
+  its edges, and increases linearly to one at the band centre. For a LunarLander box zone,
+  it is the minimum of the normalized distances to the two pairs of box boundaries; for the
+  legacy corridor zone, it reduces to the binary zone indicator. Averaging $d(s)$ combines
+  entry frequency with penetration severity, so shallow boundary contacts contribute less than
+  trajectories through the zone interior.
+- _Left/right path split_ (pendulum only): the sign of the cumulative unwrapped angle change
+  determines the code's route label: positive travel is recorded as ``right'' and non-positive
+  travel as ``left''. The two percentages are descriptive route diagnostics, not additional
+  constraint values, and are undefined for LunarLander.
+
+*Task performance (higher is better unless stated otherwise).*
+- _True return_: the undiscounted sum of clean task rewards over an episode. The evaluator
+  stores the episode mean and standard deviation for each run; tables compare the means across
+  seeds.
+- _Upright success rate_ (pendulum): the fraction of episodes reaching $abs(theta) < 0.2$
+  radians at any evaluated step.
+- _Time to upright_ (pendulum): the first evaluated step satisfying the upright threshold;
+  episodes that never reach it are assigned the episode limit (200 steps in E1/E3).
+- _Strict landing rate_ (LunarLander): the fraction of episodes ending in a terminal event
+  with a positive terminal reward, corresponding to the environment's $+100$ landing bonus.
+- _Landing success rate_ (LunarLander): the strict landing events together with episodes whose
+  final state is touchdown-like (near the pad, sufficiently stable, or showing leg contact),
+  including timeouts. It is therefore a more permissive task-success measure.
+- _Crash rate_ and _timeout rate_ (LunarLander): terminal events with a non-positive terminal
+  reward and episodes ending at the 500-step limit without termination, respectively. These
+  categories are mutually exclusive with strict landing and partition the evaluated episodes.
+- _Mean episode length_: the average number of executed transitions.
+
+*Constraint diagnostics (Lagrangian only).* The implementation logs the final multiplier
+$alpha$, its trajectory over dual updates, the constraint value $C$, the target $epsilon$, and
+whether the final update satisfies $C <= epsilon$. When the Lagrangian uses the ``zone''
+constraint, $C$ is the fraction of *training steps* inside the excluded zone; when it uses the
+``cost'' constraint, $C$ is the mean normalized cost signal. Neither quantity is the
+per-episode zone visit rate reported at evaluation.
+
+*Robustness and compute.* For each method, robustness is assessed from the spread of clean
+return and zone metrics across its own tuning-parameter sweep ($p$ for the baseline and
+$epsilon$ for the Lagrangian). Wall-clock training time is recorded with evaluation excluded;
+the Lagrangian's additional operation is the scalar dual update performed at the configured
+interval.
