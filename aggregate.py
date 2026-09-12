@@ -36,7 +36,10 @@ def load_runs(runs_dir: Path) -> pd.DataFrame:
         rows.append(r)
     if not rows:
         raise SystemExit(f"no metrics.json under {runs_dir}/")
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    if "zone_depth_mean" not in out.columns:
+        out["zone_depth_mean"] = float("nan")
+    return out
 
 
 def add_robustness(df: pd.DataFrame) -> dict:
@@ -62,6 +65,7 @@ def normalize(series, direction):
 def build_decision_table(df: pd.DataFrame) -> pd.DataFrame:
     agg = df.groupby("method").agg(
         zone_step_frac=("zone_step_frac", "mean"),
+        zone_depth_mean=("zone_depth_mean", "mean"),
         true_return_mean=("true_return_mean", "mean"),
         fits_local=("fits_local", "mean"),
         cost_vs_forecast_err_corr=("cost_vs_forecast_err_corr", "mean"),
@@ -79,12 +83,16 @@ def build_decision_table(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def to_markdown(agg: pd.DataFrame) -> str:
-    cols = ["zone_step_frac", "true_return_mean", "robustness_score",
+    cols = ["zone_step_frac", "zone_depth_mean", "true_return_mean", "robustness_score",
             "fits_local", "cost_vs_forecast_err_corr", "wall_clock_train_s", "weighted_total"]
     lines = ["# Decision Table\n", "| method | " + " | ".join(cols) + " |",
              "|" + "---|" * (len(cols) + 1)]
+    precision = {"zone_step_frac": 5, "zone_depth_mean": 5}
     for method, row in agg.iterrows():
-        vals = " | ".join(f"{row[c]:.3f}" if isinstance(row[c], float) else str(row[c]) for c in cols)
+        vals = " | ".join(
+            f"{row[c]:.{precision.get(c, 3)}f}" if isinstance(row[c], float) else str(row[c])
+            for c in cols
+        )
         lines.append(f"| {method} | {vals} |")
     winner = agg.index[0]
     lines.append(f"\n**Winner (highest weighted_total): `{winner}`** — carry into the full "

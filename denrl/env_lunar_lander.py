@@ -77,6 +77,26 @@ class LunarZone:
             unstable_attitude = angle >= self.tilt_min or ang_vel >= self.angular_speed_min
             return near_ground and (unstable_descent or unstable_attitude)
 
+    def depth(self, obs) -> float:
+        """Normalized penetration depth, matching Zone.depth (pendulum). Box zone:
+        distance to the nearest box edge, normalized by half-extent, 0 at the
+        boundary rising to 1 at the box center. Corridor zone: binary fallback,
+        its risk geometry isn't a simple convex region."""
+        if self.zone_type != "box":
+            return 1.0 if self.contains(obs) else 0.0
+        arr = np.asarray(obs, dtype=float).reshape(-1)
+        if arr.shape[0] < 2:
+            return 0.0
+        x, y = float(arr[0]), float(arr[1])
+        if not (self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max):
+            return 0.0
+        hx = (self.x_max - self.x_min) / 2.0
+        hy = (self.y_max - self.y_min) / 2.0
+        cx, cy = (self.x_min + self.x_max) / 2.0, (self.y_min + self.y_max) / 2.0
+        dx = 1.0 - abs(x - cx) / hx if hx > 0 else 1.0
+        dy = 1.0 - abs(y - cy) / hy if hy > 0 else 1.0
+        return min(dx, dy)
+
     def __eq__(self, other):
         o = as_lunar_zone(other) if not isinstance(other, LunarZone) else other
         if self.zone_type != o.zone_type:

@@ -1,0 +1,6 @@
+metric,lower_is_better,baseline_mean,baseline_std,baseline_n,lagr_mean,lagr_std,lagr_n
+Zone depth-weighted step fraction,1,0.003160,0.003592,18,0.000745,0.000769,6
+True return,0,-337.090119,7.050083,18,-331.238903,9.513346,6
+Upright success rate,0,0.944444,0.229061,18,1.000000,0.000000,6
+Time to upright (steps),1,64.345000,33.405766,18,54.225000,4.107388,6
+Wall-clock training time (s),1,787.422222,5.591020,18,789.016667,2.847465,6

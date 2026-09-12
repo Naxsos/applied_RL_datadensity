@@ -86,6 +86,16 @@ def in_zone(obs, zone=PAPER_ZONE) -> bool:
     return pendulum_in_zone(obs, zone)
 
 
+def zone_depth(obs, zone=PAPER_ZONE) -> float:
+    """Normalized penetration depth: 0 outside the zone, rising to 1 at its center.
+    Averaging this over steps gives a single safety number that folds in both how
+    often and how deep the agent enters, unlike the binary in_zone check."""
+    z = zone if hasattr(zone, "contains") else as_zone(zone)
+    if hasattr(z, "depth"):
+        return float(z.depth(obs))
+    return 1.0 if z.contains(obs) else 0.0
+
+
 class PenalizedEnv(gym.Wrapper):
     """The single shared reward wrapper (the whole comparison hinges on reuse here)."""
 

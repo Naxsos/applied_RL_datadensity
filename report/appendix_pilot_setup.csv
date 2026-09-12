@@ -1,0 +1,2 @@
+ENVIRONMENTS,SEEDS,TRAINING,EVALUATION,KNOB SWEEP,SCORING
+"E1 paper zone · E2 uncertainty≠density testbed · E3 shifted zone","2","150,000 SAC steps, full length","500 episodes","p / weight / ε","Weighted rubric: safety 30% · return 25% · robustness 20% · compute 15% · signal 10%"
