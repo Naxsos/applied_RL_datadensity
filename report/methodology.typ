@@ -41,10 +41,50 @@ zone-free swing-up for E1. For the current E3 definition, however, no zone-free
 path was found, so its feasibility for a fair safety comparison has not yet
 been established.
 
-- *Generalization: LunarLander.* #emph[TODO: define the excluded-zone / low-data-region
-  analogue for this environment, and why it is expected to stress-test the same claim.]
-- Shared components held fixed across both methods per environment: transition model /
-  simulator, SAC hyperparameters, training steps, seeds.
+- *Generalization: LunarLander.*
+The LunarLander generalization task uses the continuous-control `LunarLander-v3` environment,
+a standard Gymnasium benchmark for contact-rich control problems in which the agent must
+land a craft on a pad while preserving stability @towers2024gymnasium.
+The observation is $s_t = (x_t, y_t, dot(x)_t, dot(y)_t, theta_t, dot(theta)_t, l_t, r_t)$, where
+$(x, y)$ denotes horizontal and vertical position, $dot(x), dot(y)$ are velocities,
+$theta$ is attitude angle, $dot(theta)$ is angular velocity, and $l, r in {0, 1}$ indicate left and right
+leg ground contact. The action is a discrete selection from four thrusters (no action, main engine, left-only,
+right-only). The objective is to land smoothly at the target position $(0, 0)$ @gymnasium_lunar_lander.
+
+As illustrated in the offline-data figure (@fig-ll-offline-zone), an excluded box-shaped
+region in $(x, y)$ position space is constructed as an artificial low-density zone rather than
+as a literal no-landing restriction in the environment. All offline trajectories that enter
+this box were removed from the training data, so the region becomes a sparse-coverage area
+with effectively zero observed samples:
+
+$
+  (x, y) in [-0.2, 0.2] times [0.6, 1.0].
+$
+
+This box is therefore not a hard airspace exclusion in the simulator; it is a dataset-design
+feature that induces a low-data region in the offline dataset. The region remains navigable by
+steering left or right, analogous to the pendulum's excluded angular interval. Unlike the
+pendulum's one-dimensional angular constraint, the box zone allows richer navigation
+strategies while remaining a deliberately under-covered area in the offline data. The purpose
+is to test whether the density-aware methods continue to avoid the sparse region when the task
+requires passing near it en route to the landing pad, mirroring the sparse-coverage setups
+used in prior density-penalized offline RL work @lantz2025.
+
+#figure(
+  image("../figures/ll_offline_with_zone.png", width: 75%),
+  caption: [LunarLander offline trajectories with excluded box-zone visualization.
+  The red rectangle marks the excluded region in position space where the agent should avoid lingering.],
+) <fig-ll-offline-zone>
+
+Across both methods and all environments, the following components are held fixed to isolate
+the effect of the weighting strategy. The transition model is an LSTM with frozen checkpoint
+set to null, falling back to the true simulator dynamics. The cost signal is KDE density-based
+with bandwidth 0.1, reference percentile 5.0, and a threshold of 0.025 below which the penalty
+is flat. The SAC algorithm is configured with SB3 defaults. Training runs for 150,000 steps on both Pendulum and LunarLander. Evaluation occurs on the clean,
+unpenalized reward over 200 episodes, with
+maximum episode lengths of 200 steps (Pendulum) and 500 steps (LunarLander). All results report
+means and standard deviations across $>=5$ independent random seeds per configuration.
+//TODO: add a table of hyperparameters and their values.
 
 == Methods compared
 
@@ -95,6 +135,15 @@ If the constraint is violated, $alpha$ increases and the agent is penalized
 more strongly for entering low-density regions. If the constraint is satisfied,
 $alpha$ can decrease. The method can therefore adapt the penalty strength
 automatically instead of relying on a fixed manually selected value of $p$.
+
+Two constraint formulations are supported:
+- *Zone-based constraint* ($C(pi) =$ zone step fraction): measures the fraction of training
+  steps within the excluded region. $epsilon$ is then an allowed violation rate (e.g.,
+  $epsilon = 0.1$ means $<=10$% of steps may be in the zone). Used for LunarLander.
+- *Cost-based constraint* ($C(pi) =$ mean KDE cost): measures the average normalized cost
+  signal accumulated during training. $epsilon$ is an absolute cost threshold (O(0.01-0.1)).
+  Used for Pendulum. Both quantities are logged regardless of which drives the dual step,
+  enabling diagnosis of either formulation.
 
 *Uncertainty-based methods.*
 
