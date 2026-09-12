@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "typst-mcp": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "git+https://github.com/FujishigeTemma/typst-mcp",
+        "typst-mcp",
+        "serve"
+      ],
+      "env": {}
+    }
+  }
+}
