@@ -1,5 +1,4 @@
 #import "@preview/charged-ieee:0.1.4": ieee
-#import "@preview/dashy-todo:0.1.3": todo
 
 #set page(
   numbering: "1",
@@ -21,8 +20,9 @@ Model-based offline reinforcement learning policies can exploit regions of state
     practitioner specifies an allowed constraint-violation rate instead of an arbitrary penalty
     magnitude. We compare this Lagrangian weighting scheme against the fixed-weight baseline on
     a pendulum swing-up task with an excluded low-data zone, and test generalization on
-    LunarLander. #todo[TODO: fill in with final headline result once experiments are complete.]
-  
+    LunarLander. On the pendulum, a single Lagrangian setting matches the best results of the
+    entire fixed-weight sweep without needing to search over $p$; on LunarLander, it lowers the
+    crash rate but falls short of the best fixed weight's task performance.
   ],
   authors: (
     (
