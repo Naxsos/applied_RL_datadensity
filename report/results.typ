@@ -132,7 +132,7 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
 
 == LunarLander: Baseline vs. Lagrangian
 
-#let rows = csv("ll_group_comparison.csv", row-type: dictionary)
+#let rows = csv("data/ll_group_comparison.csv", row-type: dictionary)
 
 #let display = (
   "Zone depth-weighted step fraction": (label: [Zone depth-weighted \ step fraction], percent: true, decimals: 3),
@@ -203,7 +203,7 @@ Crash rates are minimal but substantially lower under Lagrangian (2.4% vs. 0.1%)
 This phenomenon can be viewed in the trajectories of @fig-ll-combined-traj in the appendix, where the Lagrangian policy approaches the landing pad more directly and with less overshoot and outliers than the baseline.
 Wall-clock training time is similar, confirming that adaptive weighting incurs no computational penalty.
 The results support the generalization claim: Lagrangian weighting adapts effectively to a fundamentally different task structure (landing vs. swing-up) with different observation spaces (8D vs. 3D) and action spaces, demonstrating that this approach of density-aware penalty adaptation is not specific to the Pendulum domain.
-As shown in @fig-ll-alpha-trajectory, the multiplier rises when the policy still enters the sparse region and then relaxes once the constraint is satisfied similarly as in the Pendulum experiments, indicating that the avoidance penalty is automatically tuned during training rather than fixed by hand.
+The LunarLander $alpha$ trajectory in @fig-ll-alpha-trajectory shows that the multiplier rises when the policy still enters the sparse region and then relaxes once the constraint is satisfied similarly as in the Pendulum experiments, indicating that the avoidance penalty is automatically tuned during training rather than fixed by hand.
 
 #figure(
   align(center)[#image("../figures/ll_alpha_trajectory.png", width: 100%)],
@@ -211,3 +211,6 @@ As shown in @fig-ll-alpha-trajectory, the multiplier rises when the policy still
     Lagrangian dual variable $alpha$ over training for LunarLander, pooled across six different seeds.
   ],
 ) <fig-ll-alpha-trajectory>
+
+The multiplier rises sharply while the policy still enters the sparse box region, peaks when the violation is largest, and then decays toward zero as the policy learns to avoid the excluded region. The right panel shows the corresponding constraint value $C$ staying above the fixed threshold $epsilon = 0.01$ early in training and then dropping mostly below it, with some brief spikes each with corresponding $alpha$ increase.
+This indicates that the avoidance penalty is tuned online to the current violation level rather than remaining fixed for the entire run, which is why a single Lagrangian setting can adapt across task structure without hand-tuning a new fixed weight.
