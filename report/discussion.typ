@@ -1,5 +1,3 @@
-#import "@preview/dashy-todo:0.1.3": todo
-
 = Discussion <sec-discussion>
 
 == How a learned multiplier compares to a fixed one
@@ -30,4 +28,32 @@ The estimated density $hat(rho)$ does not fall to zero right at the boundary; it
 The zone depth-weighted step fraction reported in @tab-pendulum-pooled and @tab-pendulum-by-p is built to discount exactly this: weighting entries toward zero near the edge and toward one at the band's centre (@sec-metrics), it scores a shallow graze far below a genuine crossing, which is why $p=30$ and lagr both still register some zone contact yet post depth-weighted values close to zero.
 That weighting compensates for the smoothing at the level of the reported metric, but it does not remove the underlying limitation: a KDE-derived cost signal has a soft boundary by construction, so no penalty scheme built on top of it, fixed or learned, should be expected to drive raw zone contact to exactly zero.
 
-#todo("Add lunar lander part of discussion")
+== Generalizing to LunarLander
+#v(-10pt)
+\
+LunarLander changes several things at once relative to the pendulum: a landing task rather than a swing-up, an 8-dimensional observation against the pendulum's 3, and four discrete thrusters against a single continuous torque, so whatever transfers here is not simply a restatement of the pendulum result on a relabeled environment.
+#v(-10pt)
+\
+Pooled against the entire baseline sweep, @tab-ll-pooled shows lagr ahead on six of seven metrics, but that comparison flatters it: $p=30$, the weakest setting in the pool (lowest return, highest zone depth-weighted fraction of all four groups), drags the pooled baseline average down and inflates lagr's apparent margin over it.
+@tab-ll-by-p, which breaks the pool back into $p=2$, $p=10$, and $p=30$, tells a less favorable story: $p=10$ alone is the strongest setting on every task-performance metric measured, reaching the highest return ($260.0 plus.minus 17.0$ against lagr's $243.6 plus.minus 63.8$), landing success ($99.5 plus.minus 0.9%$ against $97.9 plus.minus 4.7%$), strict landing rate ($93.7 plus.minus 4.6%$ against $84.4 plus.minus 33.1%$), and lowest timeout rate ($4.2 plus.minus 2.6%$ against $15.5 plus.minus 32.8%$), with markedly less run-to-run variance than lagr, whose own standard deviation on strict landing and timeout rate exceeds its mean.
+Against $p=10$ specifically, lagr does not win a single one of these metrics.
+#v(-10pt)
+\
+The one result that survives this stricter, per-$p$ comparison is the crash rate: lagr's $0.1 plus.minus 0.2%$ sits an order of magnitude below every individual baseline setting ($2.6%$, $2.2%$, and $2.3%$ for $p=2$, $p=10$, and $p=30$), a gap larger than any of the groups' own spread.
+@fig-ll-combined-traj is consistent with this: the baseline panels, most visibly $p=2$ and $p=10$, show long looping excursions to the side of the pad before landing, while lagr's trajectories stay more tightly clustered along a direct descent, a plausible behavioral source of its lower crash rate even though, as the next paragraph shows, it does not visibly avoid the excluded box any more than the baseline does.
+With only six seeds per setting, this single robust effect, rather than a broad performance or safety advantage, is the realistic summary of what generalizes to LunarLander: lagr trades a modest amount of task performance relative to a well-tuned $p=10$ for a substantially lower crash rate, without needing to already know that $p=10$ is the setting worth tuning toward.
+#v(-10pt)
+\
+The tuning mechanism itself does transfer even where its effect on the outcome is mixed: @fig-ll-alpha-trajectory shows $alpha$ rising while the policy still enters the sparse box and decaying once violations subside, the same pattern @fig-alpha-trajectory establishes for the pendulum.
+That the online-tuning behavior reproduces cleanly on a task this different, while the resulting safety-performance trade-off does not clearly beat the best fixed $p$, suggests the auto-tuning mechanism is the more portable property of the Lagrangian formulation, not any particular trade-off it happens to buy on a given task.
+#v(-10pt)
+\
+None of the methods visibly avoid the LunarLander zone either.
+The pendulum trajectories in @fig-vis-trajectories showed a visible avoidance pattern: $p=10$, $p=30$, and lagr all leave the excluded wedge visibly emptier than $p=2$ does.
+@fig-ll-combined-traj shows no equivalent effect for LunarLander: all four panels, $p in {2, 10, 30}$ and lagr alike, show trajectory density passing through and around the excluded box at comparable intensity, with none of the four settings leaving it visibly emptier than the others.
+This matches the depth-weighted step fraction in @tab-ll-pooled and @tab-ll-by-p, which sits in a narrow band across all four groups ($0.953%$ to $1.248%$) rather than spreading out the way it does across the pendulum sweep ($0.076%$ to $0.760%$); if the penalty were shaping the route the way it does on the pendulum, a larger $p$ should show at least a directional reduction, whereas $p=30$ instead posts the highest depth-weighted fraction of the four groups.
+#v(-10pt)
+\
+The pendulum's soft-boundary explanation (@sec-metrics's edge decay of the KDE density) does not obviously account for this: it explains why a policy that is otherwise avoiding a zone still grazes its edge, not why every penalty weight tested, including the largest, fails to produce any visible avoidance at all.
+A more likely explanation is geometric: the box sits inside the funnel every landing trajectory must pass through en route to the pad (@fig-ll-offline-zone), and that same corridor is also the most direct and stable approach to the platform, so steering around the box trades stability for avoidance rather than getting both for free the way the pendulum's alternate swing-up side does; no penalty magnitude tested changes this qualitative trade.
+Distinguishing this from a simply under-tuned penalty (bandwidth, threshold, or zone placement) would require sweeping those settings or checking whether a zone-free landing path exists at all, neither of which the current results establish; on the evidence collected, the honest conclusion is that additional tuning may be needed before the LunarLander zone can be treated as a fair test of avoidance at all, rather than that density-based avoidance transfers to this environment as-is.

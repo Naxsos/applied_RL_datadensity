@@ -196,15 +196,11 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
   ],
 ) <tab-ll-pooled>
 
-Lagrangian outperforms the pooled baseline on task performance (true return, landing success,
-strict landing) while reducing the crash rate.
-Allthough the zone depth-weighted step fraction is slightly lower under Lagrangian (0.953% vs. 1.114%), both methods still enter the sparse region for a non-negligible fraction of their training steps, which is expected since the sparse region lies directly on the direct and therefore more stable path from the start to the landing platform.
-The timeout rate is similar (16.1% vs. 15.5%), with Lagrangian slightly lower, and both methods remain comparable in zone-depth behavior.
-Crash rates are minimal but substantially lower and more consistent under Lagrangian (2.4% vs. 0.1%), suggesting smoother approach behavior.
-This phenomenon can be viewed in the trajectories of @fig-ll-combined-traj in the appendix, where the Lagrangian policy approaches the landing pad more directly and with less overshoot and outliers than the baseline.
-Wall-clock training time is some what higher for Lagrangian (2480.7s vs. 2565.3s), but this is expected given the additional dual updates and the more complex task structure.
-The results support the generalization claim: Lagrangian weighting adapts effectively to a fundamentally different task structure (landing vs. swing-up) with different observation spaces (8D vs. 3D) and action spaces, demonstrating that this approach of density-aware penalty adaptation is not specific to the Pendulum domain.
-The LunarLander $alpha$ trajectory in @fig-ll-alpha-trajectory shows that the multiplier rises when the policy still enters the sparse region and then relaxes once the constraint is satisfied similarly as in the Pendulum experiments, indicating that the avoidance penalty is automatically tuned during training rather than fixed by hand.
+Pooled against the baseline sweep, lagr reports a higher true return, landing success rate,
+and strict landing rate, a substantially lower crash rate, and a comparable timeout rate and
+zone depth-weighted step fraction (@tab-ll-pooled); @sec-discussion examines these differences
+against the baseline's individual $p$ settings rather than the pool.
+@fig-ll-combined-traj in the appendix visualizes the corresponding evaluation trajectories.
 
 #figure(
   align(center)[#image("../figures/ll_alpha_trajectory.png", width: 100%)],
@@ -214,4 +210,3 @@ The LunarLander $alpha$ trajectory in @fig-ll-alpha-trajectory shows that the mu
 ) <fig-ll-alpha-trajectory>
 
 The multiplier rises sharply while the policy still enters the sparse box region, peaks when the violation is largest, and then decays toward zero as the policy learns to avoid the excluded region. The right panel shows the corresponding constraint value $C$ staying above the fixed threshold $epsilon = 0.01$ early in training and then dropping mostly below it, with some brief spikes each with corresponding $alpha$ increase.
-This indicates that the avoidance penalty is tuned online to the current violation level rather than remaining fixed for the entire run, which is why a single Lagrangian setting can adapt across task structure without hand-tuning a new fixed weight.
