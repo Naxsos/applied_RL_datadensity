@@ -4,7 +4,8 @@
 This report compared a fixed density-penalty coefficient $p$ @lantz2025 with a Lagrange
 multiplier learned online from a user-specified tolerance $epsilon$. Under the shared
 experimental design, adaptive weighting improved the safety-performance trade-off on
-Pendulum and reduced over-penalization on LunarLander. It replaces the fixed-weight sweep
+Pendulum and, on LunarLander, was competitive with the fixed-weight sweep on task performance
+with fewer crashes, using the same dual setting without retuning. It replaces the fixed-weight sweep
 with a tolerance specification, while retaining dual hyperparameters that require calibration.
 #v(-10pt)
 \
@@ -52,58 +53,78 @@ does not remove the need to scale the dual step appropriately relative to the tr
 == LunarLander
 #v(-10pt)
 \
-This environment changes the reward scale (per-step shaping rewards of order
-one and terminal rewards of $plus.minus 100$) and the sparse-region geometry (low altitudes
-rather than an excluded band). Its constraint concerns unstable near-ground states that
-landing trajectories must approach. At $p = 10$ or $p = 30$ the lander does not land, with $0%$ strict landings,
-timeout rates of $87%$ and $92%$, and clean returns of $20 plus.minus 11$ and
-$-6 plus.minus 14$, because the density penalty on low altitude outweighs the landing reward.
-At $p = 2$ the outcome splits across seeds, with strict landing rates of $0%$, $57%$ and
-$100%$. The unpenalized reference $p = 0$ lands in $67 plus.minus 40%$ of episodes for a return
-of $203 plus.minus 91$.
+This environment changes the reward scale (per-step shaping rewards of order one and
+terminal rewards of $plus.minus 100$), the dimensionality of observations and actions, and the
+sparse-region geometry: the excluded box $[-0.2, 0.2] times [0.6, 1.0]$ lies on the direct
+descent path to the pad and can be avoided only by a lateral detour. With the Pendulum dual
+setting unchanged, the Lagrangian at $epsilon = 0.01$ reached a clean return of
+$243.6 plus.minus 63.8$ compared with $233.1 plus.minus 52.4$ for the pooled sweep
+$p in {2, 10, 30}$ (@tab-ll-pooled), strict landing in $84.4 plus.minus 33.1%$ compared with
+$81.5 plus.minus 25.3%$ of episodes, and a crash rate of $0.08 plus.minus 0.19%$ compared with
+$2.4 plus.minus 3.4%$, at a wall-clock cost of $2565$ s compared with $2481$ s.
 #v(-10pt)
 \
-The Lagrangian at $epsilon = 0.05$ lands in $98.3 plus.minus 2.4%$ of
-episodes with no crashes and a return of $267 plus.minus 4$ over three seeds, and
-$epsilon = 0.1$ performs similarly at $96.7 plus.minus 2.1%$ and $265 plus.minus 10$; pooling
-$epsilon in {0.02, 0.05, 0.1}$ compared with $p in {2, 10, 30}$ gives strict landing rates of $82%$
-compared with $17%$ and returns of $227 plus.minus 76$ compared with $56 plus.minus 91$.
+The individual baseline settings do not reproduce the Pendulum trade-off between avoidance and
+task success. Depth-weighted occupancy is similar for all three weights ($1.05%$, $1.04%$ and
+$1.25%$ for $p = 2$, $10$ and $30$), while task performance degrades at both ends of the sweep:
+at $p = 2$ strict landing rates range from $51%$ to $99.5%$ across seeds, and at $p = 30$ one
+seed lands in $3%$ of episodes and times out in $97%$. The most consistent fixed setting is
+$p = 10$, with strict landing in $93.7 plus.minus 4.6%$ of episodes and a return of
+$260.0 plus.minus 17.0$.
 #v(-10pt)
 \
-Policies that land occupy the corridor for only a few percent of their training steps, between $1.4%$ and $6.6%$, so a tolerance of $0.05$ or $0.1$ is met early,
-$alpha$ decays to $0$ in five seeds of six, and the agent resumes optimization of the clean landing objective.
-A tolerance of $0.02$, by contrast, is close to the minimum occupancy required for landing. This means, $alpha$
-stabilizes near its initial value and the outcome splits across seeds much as $p = 2$ does,
-at $0%$, $57%$ and $95%$.
+The multiplier trajectory in @fig-ll-alpha-trajectory follows the Pendulum pattern: $alpha$
+rises from $5$ to peaks between $8.7$ and $23.2$ while the early policy violates the
+constraint, then decays, ending at exactly $0$ with a final constraint value of $0$ in all six
+seeds. The point at which $alpha$ first reaches $0$ varies between $68.5$k and $281$k of the
+$300$k training steps, so the penalty is withdrawn per seed once avoidance holds rather than
+applied for the full budget.
 #v(-10pt)
 \
-These results demonstrate reduced over-penalization, but do not establish improved safety. Landing
-policies register per-episode corridor visit rates averaging $85%$ to $93%$, since a brief
-touchdown already satisfies the corridor's speed or tilt thresholds, while the low visit rates
-of $p = 10$ and $p = 30$ belong to policies that hover and never land. Fixed weight and
-Lagrangian are separated in this environment by the over-penalization failure mode rather than
-by avoidance, and the relevant safety assessment is therefore per step: policies
-trained at $epsilon = 0.05$ finish at corridor step rates of $1.4%$ to $2.6%$, within the
-specified tolerance.
+Neither method avoids the box itself. Because it lies on the descent path, Lagrangian and
+fixed-weight policies enter it in $25.3%$ and $27.3%$ of evaluation episodes, with
+depth-weighted occupancy of $0.95 plus.minus 0.19%$ and $1.11 plus.minus 0.49%$. The Lagrangian
+improves the consistency of crash rate and occupancy across seeds rather than the degree of
+avoidance, and its mean advantage in return and landing is small relative to the variation
+between seeds, as discussed below.
 
 == Limitations and outlook.
 #v(-10pt)
 \
-The evidence is limited to six seeds per setting for Pendulum,
-three for LunarLander, with KDE over position as the single type of cost signal. Training in the
+The evidence is limited to six seeds per setting in both environments, a single tolerance
+$epsilon = 0.01$, and KDE over position as the single type of cost signal. Training in the
 true simulator excludes model exploitation by construction, leaving the original motivation
 for density penalties untested. The adaptive method also introduces dual hyperparameters
 and a transient phase in which $alpha$ can overshoot before settling.
 
+On LunarLander, the mean differences between the Lagrangian and the pooled fixed weight in
+return ($243.6 plus.minus 63.8$ compared with $233.1 plus.minus 52.4$), strict landing
+($84.4%$ compared with $81.5%$), timeout rate and depth-weighted occupancy ($0.95%$ compared
+with $1.11%$) lie within one standard deviation across seeds, and the best single weight,
+$p = 10$, has the higher mean return ($260.0 plus.minus 17.0$) and strict landing rate
+($93.7%$). The Lagrangian means are, however, dominated by one seed that times out in $89%$ of
+episodes. This failure is not attributable to the constraint: its $alpha$ first reaches $0$
+after $68.5$k steps and averages $0.15$ over the remaining training, so the policy was trained
+on an almost unpenalized reward, and timeout rates above $30%$ also occur in 5 of 18
+fixed-weight runs. The other five Lagrangian seeds land strictly in $97.5%$ to $100%$ of episodes, and the
+median seed exceeds $p = 10$ in return ($269.7$ compared with $264.0$) and strict landing
+($99.2%$ compared with $95.0%$). In addition, $p = 10$ is identified as best only after
+training the full sweep of 18 runs, whereas the Lagrangian reuses the Pendulum setting
+($epsilon = 0.01$, $eta_alpha = 10$, $alpha_0 = 5$) without adjustment, and it is the only
+method whose crash rate stays at or below $0.5%$ in every seed (compared with up to $11%$ in
+8 of 18 fixed-weight runs). With six seeds, the lander results establish that a single
+untuned tolerance is competitive with the best fixed weight of a sweep, at $3%$ higher
+wall-clock cost, but not that it outperforms it.
+
 Defining the constraint per training step leaves the per-episode visit rate unbounded, though safety
 requirements are frequently phrased in those terms; evaluating such requirements directly would require a
-per-episode constraint, or $epsilon$ combined with hard termination on zone entry. The
+per-episode constraint, or $epsilon$ combined with hard termination on zone entry. In
+LunarLander, the box lies on the direct descent path, and both methods enter it in about
+a quarter of evaluation episodes ($25%$ compared with $27%$). The
 wider band E3 did not permit a zone-free swing-up, so the auto-tuning claim under
-shifted zone geometry remains untested on the pendulum, and in LunarLander the excluded region
-was not excluded from the data, so the density signal and the constraint quantify
-different properties.
+shifted zone geometry remains untested on the pendulum.
 
-Directions for future work are to repeat the lander experiment with a region
-that is both excluded from the data and avoidable, to restore the learned transition model,
-and to replace standard dual ascent with a damped variant @stooke2020 in order to shorten the
-transient.
+Directions for future work are to evaluate several tolerances and more seeds on LunarLander
+and compare them against the best single fixed weight rather than the pooled sweep, to
+restore the learned transition model, and to replace standard dual ascent with a damped
+variant @stooke2020 in order to shorten the transient.
