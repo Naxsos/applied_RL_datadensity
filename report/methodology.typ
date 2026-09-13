@@ -210,7 +210,7 @@ therefore adapts the penalty strength continuously instead of selecting one of
 the three predefined baseline weights.
 
 All policies are trained using the Stable-Baselines3 implementation of Soft
-Actor-Critic (SAC) with an MLP policy for 150,000 environment steps. The KDE
+Actor-Critic (SAC) with an MLP policy for 150,000 (for LunarLander 300,000) environment steps. The KDE
 safety signal uses a bandwidth of 0.1 and a binary density threshold of 0.025.
 A state receives a safety cost of 1 when its estimated density is below this
 threshold and a cost of 0 otherwise.
@@ -228,7 +228,7 @@ steps using 50 episodes. These evaluations monitor policy development without
 affecting the policy updates.
 
 Each policy is evaluated over 200 episodes, with
-a maximum length of 200 steps per episode. Evaluation is performed in a
+a maximum length of 200 (for LunarLander 500) steps per episode. Evaluation is performed in a
 separate, unpenalized environment using deterministic actions. Returns are
 calculated exclusively from the original task reward, while safety is measured
 separately using the zone-visit rate and the fraction of steps spent inside the

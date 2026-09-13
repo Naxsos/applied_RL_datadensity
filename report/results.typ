@@ -1,6 +1,6 @@
 #import "@preview/dashy-todo:0.1.3": todo
 
-= Results Jonas: Lunar Lander; Gerrit: Pendulum<sec-results>
+= Results <sec-results>
 
 == Pendulum (E1): Baseline vs. Lagrangian
 
@@ -190,18 +190,19 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
   ),
   kind: table,
   caption: figure.caption(position: bottom)[
-   LunarLander, clean-reward evaluation (100 episodes/seed). Baseline pools
-   $p in {2, 10, 30}$ (3 seeds each, $n=9$); Lagrangian uses a fixed
-   $epsilon = 0.01$ (6 seeds, $n=6$). Bold marks the better mean per row.
+   LunarLander, clean-reward evaluation (200 episodes/seed). Baseline pools
+   $p in {2, 10, 30}$ (6 seeds each); Lagrangian uses a fixed
+   $epsilon = 0.01$ (6 seeds). Bold marks the better mean per row.
   ],
 ) <tab-ll-pooled>
 
 Lagrangian outperforms the pooled baseline on task performance (true return, landing success,
 strict landing) while reducing the crash rate.
+Allthough the zone depth-weighted step fraction is slightly lower under Lagrangian (0.953% vs. 1.114%), both methods still enter the sparse region for a non-negligible fraction of their training steps, which is expected since the sparse region lies directly on the direct and therefore more stable path from the start to the landing platform.
 The timeout rate is similar (16.1% vs. 15.5%), with Lagrangian slightly lower, and both methods remain comparable in zone-depth behavior.
-Crash rates are minimal but substantially lower under Lagrangian (2.4% vs. 0.1%), suggesting smoother approach behavior.
+Crash rates are minimal but substantially lower and more consistent under Lagrangian (2.4% vs. 0.1%), suggesting smoother approach behavior.
 This phenomenon can be viewed in the trajectories of @fig-ll-combined-traj in the appendix, where the Lagrangian policy approaches the landing pad more directly and with less overshoot and outliers than the baseline.
-Wall-clock training time is similar, confirming that adaptive weighting incurs no computational penalty.
+Wall-clock training time is some what higher for Lagrangian (2480.7s vs. 2565.3s), but this is expected given the additional dual updates and the more complex task structure.
 The results support the generalization claim: Lagrangian weighting adapts effectively to a fundamentally different task structure (landing vs. swing-up) with different observation spaces (8D vs. 3D) and action spaces, demonstrating that this approach of density-aware penalty adaptation is not specific to the Pendulum domain.
 The LunarLander $alpha$ trajectory in @fig-ll-alpha-trajectory shows that the multiplier rises when the policy still enters the sparse region and then relaxes once the constraint is satisfied similarly as in the Pendulum experiments, indicating that the avoidance penalty is automatically tuned during training rather than fixed by hand.
 
