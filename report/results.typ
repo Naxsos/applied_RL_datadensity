@@ -205,8 +205,10 @@ against the baseline's individual $p$ settings rather than the pool.
 #figure(
   align(center)[#image("../figures/ll_alpha_trajectory.png", width: 100%)],
   caption: [
-    Lagrangian dual variable $alpha$ over training for LunarLander, pooled across six different seeds.
+    Lagrangian dual variable $alpha$ (left) and constraint value $C$ (right) over training,
+    lagr $epsilon = 0.01$, LunarLander, 6 seeds (thin lines), mean $plus.minus$ std shaded.
   ],
 ) <fig-ll-alpha-trajectory>
 
-The multiplier rises sharply while the policy still enters the sparse box region, peaks when the violation is largest, and then decays toward zero as the policy learns to avoid the excluded region. The right panel shows the corresponding constraint value $C$ staying above the fixed threshold $epsilon = 0.01$ early in training and then dropping mostly below it, with some brief spikes each with corresponding $alpha$ increase.
+The multiplier rises from $alpha_0 = 5$ while $C > epsilon$ early in training, peaks between $8.7$ and $23.2$ depending on the seed, and then decays, reaching $0$ in all six seeds. The right panel shows $C$ above $epsilon = 0.01$ early in training and mostly below it afterwards, with brief spikes that each raise $alpha$ again.
+On LunarLander, $C$ is driven by states at the outer edge of the offline coverage rather than by entries into the excluded box, inside which the cost signal is zero (@sec-discussion).

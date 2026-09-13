@@ -55,9 +55,9 @@ does not remove the need to scale the dual step appropriately relative to the tr
 \
 This environment changes the reward scale (per-step shaping rewards of order one and
 terminal rewards of $plus.minus 100$), the dimensionality of observations and actions, and the
-sparse-region geometry: the excluded box $[-0.2, 0.2] times [0.6, 1.0]$ lies on the direct
-descent path to the pad and can be avoided only by a lateral detour. With the Pendulum dual
-setting unchanged, the Lagrangian at $epsilon = 0.01$ reached a clean return of
+sparse-region geometry: the excluded box $[-0.075, 0.075] times [0.5, 1.0]$ lies above the pad
+on the direct descent path. With the Pendulum dual setting unchanged, but with the continuous
+instead of the binary KDE cost (@sec-protocol), the Lagrangian at $epsilon = 0.01$ reached a clean return of
 $243.6 plus.minus 63.8$ compared with $233.1 plus.minus 52.4$ for the pooled sweep
 $p in {2, 10, 30}$ (@tab-ll-pooled), strict landing in $84.4 plus.minus 33.1%$ compared with
 $81.5 plus.minus 25.3%$ of episodes, and a crash rate of $0.08 plus.minus 0.19%$ compared with
@@ -81,12 +81,14 @@ $300$k training steps, so the penalty is withdrawn per seed once avoidance holds
 applied for the full budget.
 #v(-10pt)
 \
-Neither method avoids the box itself. Because it lies on the descent path, Lagrangian and
-fixed-weight policies enter it in $25.3%$ and $27.3%$ of evaluation episodes, with
-depth-weighted occupancy of $0.95 plus.minus 0.19%$ and $1.11 plus.minus 0.49%$. The Lagrangian
-improves the consistency of crash rate and occupancy across seeds rather than the degree of
-avoidance, and its mean advantage in return and landing is small relative to the variation
-between seeds, as discussed below.
+Neither method avoids the box itself: Lagrangian and fixed-weight policies enter it in $25.3%$
+and $27.3%$ of evaluation episodes, with depth-weighted occupancy of $0.95 plus.minus 0.19%$ and
+$1.11 plus.minus 0.49%$. The box is only $1.5$ KDE bandwidths wide, so the density estimate fills
+it in and the cost, and with it the penalty, is zero inside the box for every weight
+(@sec-discussion). The LunarLander runs therefore test whether policies remain within the covered
+state space rather than whether they avoid the box. Within that scope, the Lagrangian improves
+the consistency of crash rate and occupancy across seeds, and its mean advantage in return and
+landing is small relative to the variation between seeds, as discussed below.
 
 == Limitations and outlook.
 #v(-10pt)
@@ -96,6 +98,10 @@ $epsilon = 0.01$, and KDE over position as the single type of cost signal. Train
 true simulator excludes model exploitation by construction, leaving the original motivation
 for density penalties untested. The adaptive method also introduces dual hyperparameters
 and a transient phase in which $alpha$ can overshoot before settling.
+On LunarLander, the threshold of $0.025$ was omitted from the Lagrangian configuration, so its
+runs used the continuous KDE cost while the baselines used the binary one (@sec-protocol). The two
+methods were therefore not trained on the same cost signal, and differences between them, in
+particular in crash rate, cannot be attributed to the adaptive weighting alone.
 
 On LunarLander, the mean differences between the Lagrangian and the pooled fixed weight in
 return ($243.6 plus.minus 63.8$ compared with $233.1 plus.minus 52.4$), strict landing
@@ -119,12 +125,14 @@ wall-clock cost, but not that it outperforms it.
 Defining the constraint per training step leaves the per-episode visit rate unbounded, though safety
 requirements are frequently phrased in those terms; evaluating such requirements directly would require a
 per-episode constraint, or $epsilon$ combined with hard termination on zone entry. In
-LunarLander, the box lies on the direct descent path, and both methods enter it in about
-a quarter of evaluation episodes ($25%$ compared with $27%$). The
+LunarLander, the excluded box is narrower than the smoothing of the density estimate, so the
+cost signal never marks it and box avoidance remains untested; this would require a zone several
+bandwidths wide or a smaller bandwidth. The
 wider band E3 did not permit a zone-free swing-up, so the auto-tuning claim under
 shifted zone geometry remains untested on the pendulum.
 
-Directions for future work are to evaluate several tolerances and more seeds on LunarLander
+Directions for future work are to rerun the LunarLander comparison with a matched cost signal
+and a zone the density estimate resolves, to evaluate several tolerances and more seeds there
 and compare them against the best single fixed weight rather than the pooled sweep, to
 restore the learned transition model, and to replace standard dual ascent with a damped
 variant @stooke2020 in order to shorten the transient.

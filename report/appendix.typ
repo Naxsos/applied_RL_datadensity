@@ -140,7 +140,7 @@ can be read against each hand-tuned value on its own rather than against their a
   ],
   kind: table,
   caption: figure.caption(position: bottom)[
-    LunarLander, clean-reward evaluation (100 episodes/seed, 6 seeds per column, $n=6$
+    LunarLander, clean-reward evaluation (200 episodes/seed, 6 seeds per column, $n=6$
     throughout). Same metrics and evaluation protocol as @tab-ll-pooled, with the baseline
     broken out by individual $p$ instead of pooled. Bold marks the better mean per row across
     all four columns.

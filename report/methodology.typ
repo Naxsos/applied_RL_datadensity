@@ -58,8 +58,8 @@ land a craft on a pad while preserving stability @towers2024gymnasium.
 The observation is $s_t = (x_t, y_t, dot(x)_t, dot(y)_t, theta_t, dot(theta)_t, l_t, r_t)$, where
 $(x, y)$ denotes horizontal and vertical position, $dot(x), dot(y)$ are velocities,
 $theta$ is attitude angle, $dot(theta)$ is angular velocity, and $l, r in {0, 1}$ indicate left and right
-leg ground contact. The action is a discrete selection from four thrusters (no action, main engine, left-only,
-right-only). The objective is to land smoothly at the target position $(0, 0)$ @gymnasium_lunar_lander.
+leg ground contact. The continuous action variant is used, $a_t in [-1, 1]^2$, whose two components set the
+main-engine throttle and the lateral side-engine throttle. The objective is to land smoothly at the target position $(0, 0)$ @gymnasium_lunar_lander.
 #v(-10pt)
 \
 As illustrated in the offline-data figure (@fig-ll-offline-zone), an excluded box-shaped
@@ -69,7 +69,7 @@ this box were removed from the training data, so the region becomes a sparse-cov
 with effectively zero observed samples:
 
 $
-  (x, y) in [-0.2, 0.2] times [0.6, 1.0].
+  (x, y) in [-0.075, 0.075] times [0.5, 1.0].
 $
 #v(-10pt)
 \
@@ -211,9 +211,17 @@ the three predefined baseline weights.
 
 All policies are trained using the Stable-Baselines3 implementation of Soft
 Actor-Critic (SAC) with an MLP policy for 150,000 (for LunarLander 300,000) environment steps. The KDE
-safety signal uses a bandwidth of 0.1 and a binary density threshold of 0.025.
-A state receives a safety cost of 1 when its estimated density is below this
+safety signal uses a bandwidth of 0.1 and is fitted on the positional part of the observation,
+$(cos theta, sin theta)$ for the pendulum and $(x, y)$ for LunarLander. For both pendulum methods and
+the LunarLander baseline, it uses a binary density threshold of 0.025:
+a state receives a safety cost of 1 when its estimated density is below this
 threshold and a cost of 0 otherwise.
+The LunarLander Lagrangian configuration omitted this threshold, so its runs used the
+implementation's continuous fallback,
+$c(s) = max(0, 1 - hat(rho)(s) slash rho_"ref")$, where $rho_"ref" approx 0.10$ is the 5th percentile of
+the estimated density over offline states. This cost is non-zero on about $6.7%$ of offline states,
+compared with $0.7%$ under the binary threshold, so on LunarLander the two methods were not trained on
+the same cost signal.
 
 Each of the four configurations is repeated with six independent random seeds,
 numbered 0 through 5. This produces 18 fixed-weight baseline runs and six
