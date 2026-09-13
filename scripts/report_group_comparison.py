@@ -13,8 +13,8 @@ so the Typst table can decide which value to bold without hardcoding that
 per metric.
 
 Usage:
-    python scripts/report_group_comparison.py --runs runs/vis --out report/group_comparison.csv
-    python scripts/report_group_comparison.py --runs runs/vis --pool --out report/group_comparison.csv
+    python scripts/report_group_comparison.py --runs runs/vis --out report/data/group_comparison.csv
+    python scripts/report_group_comparison.py --runs runs/vis --pool --out report/data/group_comparison.csv
 """
 from __future__ import annotations
 import argparse
@@ -50,7 +50,7 @@ def fmt_value(v: float) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", default="runs/vis")
-    ap.add_argument("--out", default="report/group_comparison.csv")
+    ap.add_argument("--out", default="report/data/group_comparison.csv")
     ap.add_argument("--pool", action="store_true",
                      help="collapse each method's knob sweep into a single column")
     args = ap.parse_args()

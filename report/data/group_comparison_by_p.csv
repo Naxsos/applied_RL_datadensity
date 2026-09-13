@@ -1,0 +1,6 @@
+metric,lower_is_better,baseline_p2_mean,baseline_p2_std,baseline_p2_n,baseline_p10_mean,baseline_p10_std,baseline_p10_n,baseline_p30_mean,baseline_p30_std,baseline_p30_n,lagr_epsilon0.01_mean,lagr_epsilon0.01_std,lagr_epsilon0.01_n
+Zone depth-weighted step fraction,1,0.007645,0.001958,6,0.001829,0.001745,6,0.000005,0.000012,6,0.000745,0.000769,6
+True return,0,-342.281356,3.095923,6,-330.989199,4.877145,6,-337.999801,7.123343,6,-331.238903,9.513346,6
+Upright success rate,0,1.000000,0.000000,6,1.000000,0.000000,6,0.833333,0.372678,6,1.000000,0.000000,6
+Time to upright (steps),1,54.771667,1.614553,6,52.426667,1.421879,6,85.836667,51.455028,6,54.225000,4.107388,6
+Wall-clock training time (s),1,783.000000,2.386769,6,786.933333,2.438351,6,792.333333,6.182412,6,789.016667,2.847465,6

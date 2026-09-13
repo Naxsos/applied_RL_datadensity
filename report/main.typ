@@ -21,7 +21,7 @@ Model-based offline reinforcement learning policies can exploit regions of state
     practitioner specifies an allowed constraint-violation rate instead of an arbitrary penalty
     magnitude. We compare this Lagrangian weighting scheme against the fixed-weight baseline on
     a pendulum swing-up task with an excluded low-data zone, and test generalization on
-    LunarLander. #emph[TODO: fill in with final headline result once experiments are complete.]
+    LunarLander. #todo[TODO: fill in with final headline result once experiments are complete.]
   
   ],
   authors: (

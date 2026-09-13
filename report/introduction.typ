@@ -6,7 +6,7 @@ where it has seen enough data: outside those regions its predictions are unrelia
 policy optimized against it can learn to exploit exactly the states where the model is wrong,
 producing behavior that looks good under the learned dynamics but fails, or is unsafe, under
 the true dynamics. This is especially problematic when parts of state space are inherently
-under-sampled in the offline dataset -- not due to a data collection oversight, but because
+under-sampled in the offline dataset, not due to a data collection oversight but because
 those regions are rare, costly, or dangerous to visit in the first place.
 \
 A standard mitigation is to penalize the reward with a data-density cost signal: states or
@@ -24,8 +24,8 @@ unconstrained penalty term, and cast the problem as a constrained Markov decisio
 penalty weight becomes a Lagrange multiplier, updated online via dual ascent so that it grows
 when the policy violates the constraint more often than allowed and shrinks otherwise. Under
 this formulation, the practitioner no longer chooses a penalty magnitude directly; instead they
-specify an *allowed violation rate* $epsilon$ -- a quantity with a direct operational
-meaning -- and the weight is learned to enforce it. We compare this Lagrangian weighting scheme
+specify an *allowed violation rate* $epsilon$ (a quantity with a direct operational
+meaning), and the weight is learned to enforce it. We compare this Lagrangian weighting scheme
 against the fixed-weight baseline under otherwise identical conditions: the same data-density
 cost signal, the same agent, and the same evaluation protocol, so that any difference in
 outcome is attributable to the weighting scheme alone.
@@ -33,8 +33,8 @@ outcome is attributable to the weighting scheme alone.
 = Contributions
 
 - A shared, pluggable reward-wrapper implementation in which the baseline and Lagrangian
-  conditions differ *only* in the weight component -- same cost signal, same agent, same
-  evaluation protocol -- so the comparison isolates a single design choice.
+  conditions differ *only* in the weight component (same cost signal, same agent, same
+  evaluation protocol), so the comparison isolates a single design choice.
 - An empirical comparison of fixed-weight and Lagrangian-weight penalization on a pendulum
   swing-up task with an excluded, low-data zone, including how each method's performance and
   safety trade-off responds to its own hyperparameter sweep.

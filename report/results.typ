@@ -1,14 +1,16 @@
-= Results Jonas: Lunar Lander; Gerrit: Pendulum <sec-results>
+#import "@preview/dashy-todo:0.1.3": todo
+
+= Results Jonas: Lunar Lander; Gerrit: Pendulum<sec-results>
 
 == Pendulum (E1): baseline vs. Lagrangian
 
-#let rows = csv("group_comparison.csv", row-type: dictionary)
+#let rows = csv("data/group_comparison.csv", row-type: dictionary)
 
 // per-metric display: whether it's a rate (scale x100, "%" suffix) and how
-// many decimals to show -- keyed by the exact label written into the CSV by
+// many decimals to show, keyed by the exact label written into the CSV by
 // scripts/report_group_comparison.py
 #let display = (
-  "Zone depth-weighted step fraction": (label: [Zone depth-weighted step fraction], percent: true, decimals: 3),
+  "Zone depth-weighted step fraction": (label: [Zone depth-weighted \ step fraction], percent: true, decimals: 3),
   "True return": (label: [True return], percent: false, decimals: 1),
   "Upright success rate": (label: [Upright success rate], percent: true, decimals: 1),
   "Time to upright (steps)": (label: [Time to upright (steps)], percent: false, decimals: 1),
@@ -25,7 +27,7 @@
 
 // group ids come straight from the CSV columns (method_knobvalue, e.g.
 // "baseline_p2", "lagr_epsilon0.01") so adding another swept value or method
-// to scripts/report_group_comparison.py's input just adds a column here --
+// to scripts/report_group_comparison.py's input just adds a column here:
 // no hardcoded method list to keep in sync.
 #let group-ids = rows.first().keys().filter(k => k.ends-with("_mean")).map(k => k.slice(0, k.len() - 5))
 
@@ -78,9 +80,8 @@
 #v(-10pt)
 \
 Lagrangian weighting matches or beats the pooled baseline on every metric in
-@tab-pendulum-pooled: $4.2 times$ shallower zone penetration, higher return,
-perfect and far more consistent upright success, and faster swing-up, at
-equal wall-clock cost. @fig-alpha-trajectory shows why: $alpha$ rises while
+@tab-pendulum-pooled: $4.2 times$ shallower zone penetration, higher return, far more consistent upright success, and faster swing-up, at almost equal wall-clock cost. 
+@fig-alpha-trajectory shows why: $alpha$ rises while
 the constraint is violated and decays toward 0 once $C < epsilon$, auto-tuning
 the penalty instead of relying on a hand-picked $p$.
 
@@ -90,43 +91,34 @@ the penalty instead of relying on a hand-picked $p$.
     Lagrangian dual variable $alpha$ (left) and constraint value $C$ (right) over
     training, lagr $epsilon = 0.01$, pendulum E1, 6 seeds (thin lines), mean $plus.minus$
     std shaded. $alpha$ rises while $C > epsilon$, then decays toward 0 once the
-    constraint is satisfied -- the auto-tuning behavior a fixed-weight baseline
+    constraint is satisfied: the auto-tuning behavior a fixed-weight baseline
     can't replicate.
   ],
 ) <fig-alpha-trajectory>
 #v(-10pt)
 \
 Early in training the policy has not yet learned to avoid the excluded band,
-so the mean constraint value $C$ spikes to roughly $0.16$ -- sixteen times the
-target $epsilon = 0.01$ -- around step 5k, while the underlying random-ish
+so the mean constraint value $C$ spikes to roughly $0.09$ around step 5k, while the underlying random-ish
 exploration policy still routes through the zone. $alpha$ climbs in response,
-from its initialized value of $5$ to a peak of about $12.5$ around step
-30k-40k, sharply raising the effective penalty until the policy learns a
-zone-avoiding route and $C$ falls back under $epsilon$. From there the two
-signals decouple by seed: once $C$ stays below $epsilon$, dual ascent pulls
-$alpha$ back down, and in 4 of 6 seeds it reaches exactly $0$ by the end of
-training -- the penalty switches itself off entirely once it is no longer
-needed. The remaining two seeds (final $alpha = 6.08$ and $16.50$) keep a
-small residual weight, consistent with occasional late-training excursions
+from its initialized value of $5$ to a peak of about $12.5$ around step 30k-40k, sharply raising the effective penalty until the policy learns a zone-avoiding route and $C$ falls back under $epsilon$. 
+From there the two signals decouple by seed: once $C$ stays below $epsilon$, dual ascent pulls $alpha$ back down, and in 4 of 6 seeds it reaches exactly $0$ by the end of training: the penalty switches itself off entirely once it is no longer needed. 
+The remaining two seeds keep a small residual weight, consistent with occasional late-training excursions
 visible as the noisy individual $C$ traces that briefly poke back above
-$epsilon$ in the right panel. No baseline weight is adjusted this way: a fixed
+$epsilon$ in the right panel. 
+No baseline weight is adjusted this way: a fixed
 $p$ pays the same cost throughout training regardless of whether the
 constraint is already satisfied.
 #v(-10pt)
 \
-The four panels in @fig-vis-trajectories trace the same route-around-vs-through trade-off the left/right
-path split quantifies. Under $p=2$ the density visibly overlaps the red wedge
-on both sides, and the swing direction is nearly a coin flip across seeds
-(left $78.8%$, right $21.2%$) -- the penalty is too weak to consistently steer
-the policy away from the shorter, zone-crossing path. $p=10$ mostly commits to
-the longer right-hand route ($83.3%$ right) with only faint density inside the
-wedge, and $p=30$ and lagr both route right on every seed ($100%$), leaving
-almost no visible mass in the zone. The qualitative difference between $p=10$
-and lagr that @tab-pendulum-pooled quantifies -- lagr's zone entries being
-shallower, not just similarly rare -- is visible here too: where $p=10$'s
-faint density inside the wedge reaches noticeably toward its center, lagr's
-entries stay hugging the boundary, barely crossing the red line before turning
-back.
+The four panels in @fig-vis-trajectories trace the same avoid-versus-cross trade-off that the
+left/right path split quantifies. Under $p=2$ the density visibly overlaps the red wedge
+on both sides, and the swing direction is random across seeds: the penalty is too weak to consistently steer
+the policy away from the shorter, zone-crossing path. 
+$p=10$ mostly commits to the right-hand route with only faint density inside the wedge, and $p=30$ and lagr both route right on every seed ($100%$), leaving no visible points in the zone, except on the edge. 
+#v(-10pt)
+\
+The qualitative difference between $p=10$ and lagr that @tab-pendulum-pooled quantifies(lagr's zone entries being shallower, not just similarly rare) is visible here too: 
+where $p=10$'s faint density inside the wedge reaches noticeably toward its center, lagr's entries are only close to the boundary, barely crossing the red line before turning back.
 
 #figure(
   align(center)[#image("../figures/vis_trajectories.png", width: 100%)],
@@ -137,7 +129,6 @@ back.
     with lagr's path visibly hugging the boundary more tightly than $p=10$'s.
   ],
 ) <fig-vis-trajectories>
-#v(-10pt)
-\
-LunarLander: same table and plots, framed as a generalization check -- does the pendulum
-  ranking hold outside that setting?
+
+
+#todo[TODO: add the LunarLander section,]
