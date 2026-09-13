@@ -84,7 +84,6 @@ can be read against each hand-tuned value on its own rather than against their a
 #let ll-by-p-display = (
   "Zone depth-weighted step fraction": (label: [Zone depth-weighted \ step fraction], percent: true, decimals: 3),
   "True return": (label: [True return], percent: false, decimals: 1),
-  "Landing success rate": (label: [Landing success rate], percent: true, decimals: 1),
   "Strict landing rate": (label: [Strict landing rate], percent: true, decimals: 1),
   "Crash rate": (label: [Crash rate], percent: true, decimals: 1),
   "Timeout rate": (label: [Timeout rate], percent: true, decimals: 1),
@@ -168,7 +167,21 @@ be compared directly across methods without differences caused by panel-specific
 == Initial exploratory experiment <appendix-pilot-experiment>
 
 The following tables summarize the setup and results of the initial exploratory
-experiment referenced in the methodology.
+experiment referenced in the methodology. The pilot predates the setup of the main
+experiments and differs from it in several ways (@table-pilot-setup): the excluded band was
+mirrored onto both sides of the swing, episodes started from gym's uniform reset instead of the
+resting state, so the pilot returns (e.g. $-146.6$ for lagr) are not comparable to the
+$approx -330$ of the main runs, the KDE cost had no density threshold, the Lagrangian bounded
+the share of training steps inside the zone with $alpha_0 = 1$ and $eta_alpha = 0.1$, and each run was evaluated over 2000 episodes with only two seeds.
+#v(-10pt)
+\
+Two caveats limit what the results can support. First, the mirrored zone makes avoiding the
+band and swinging up mutually exclusive, so the baseline's robustness of $0.000$ reflects
+$p = 30$ collapsing under that geometry rather than a property of fixed weighting on the
+one-sided task. Second, ens and bnn were run only on E2 with its chaotic band, while lagr and
+the baseline were run on E1 and E3, so the ranking in @table-pilot-results compares methods
+across different environments. The pilot is therefore reported as a record of how the scope
+was narrowed, not as a controlled comparison of the four methods.
 
 #let pilot-setup = csv("data/appendix_pilot_setup.csv")
 
@@ -232,5 +245,7 @@ experiment referenced in the methodology.
     )
   ],
   caption: [Results of the exploratory pilot experiment. Bold marks the better value per
-    metric row; see @sec-metrics for definitions.],
+    metric row. Robustness is $1$ minus the normalized spread of return and zone metrics across
+    each method's own knob sweep; the weighted total applies the rubric of @table-pilot-setup.
+    Not comparable to the main results (see text).],
 ) <table-pilot-results>

@@ -26,8 +26,9 @@ python run.py configs/baseline_LL.yaml --seed 0
 This uses a separate LunarLander environment implementation (`denrl/env_lunar_lander.py`)
 with the same run/penalty pipeline structure as Pendulum and an LL-specific excluded
 low-density region (configured under `env.excluded_zone` in `configs/baseline_LL.yaml`).
-For LL, offline data collection does **not** terminate on zone entry (unlike E1/E2/E3),
-so KDE does not create an artificial near-ground blind spot that can suppress landing.
+Offline data collection does **not** terminate on zone entry (for LL or E1/E2/E3): in-zone
+transitions are skipped and the episode continues, so KDE does not create an artificial
+near-ground blind spot that can suppress landing.
 The pilot baseline uses **continuous LunarLander + SAC** with `weight.p: 0.0` as a
 safe default while LL density-penalty tuning is still in progress.
 
@@ -48,7 +49,7 @@ bash scripts/run_matrix.sh    # all methods x seeds x knob sweeps, then aggregat
 ## One-sided excluded zone (E1/E3)
 The zone blocks one side of the swing only (`env.zone_symmetric: false`), so a swing-up can
 route around it — see EXPERIMENT_SPEC.md §4. Offline data must be regenerated after any change
-to the zone, since episodes terminate on entering it:
+to the zone, since transitions whose next state lies in it are dropped:
 ```bash
 python scripts/generate_offline_data.py --env E1     # 155k transitions (one-sided)
 python scripts/generate_offline_data.py --env E3

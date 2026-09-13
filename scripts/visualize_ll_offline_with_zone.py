@@ -113,7 +113,7 @@ def main() -> None:
     zone_in_data = zone_mask.mean() * 100.0
     fig.suptitle(
         f"LunarLander offline data (zone-filtered): {len(df)} transitions\n"
-        f"Zone box coverage: {zone_in_data:.2f}% (should be 0 or very low)",
+        f"Zone box coverage: {zone_in_data:.2f}% (low, not 0: obs after a dropped in-zone step is stored)",
         y=0.97,
     )
     fig.tight_layout(rect=(0, 0.05, 1, 0.93))

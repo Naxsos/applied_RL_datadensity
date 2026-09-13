@@ -30,11 +30,13 @@ while being the only configuration to fail the task entirely for one seed, never
 upright state in 200 episodes.
 #v(-10pt)
 \
-The multiplier trajectory in @fig-alpha-trajectory shows the mechanism that $alpha$ climbs from $5$ to roughly $12.5$ for as
+The multiplier trajectory in @fig-alpha-trajectory shows the mechanism: the mean of $alpha$ climbs from $5$ to roughly $12.5$ for as
 long as the early policy violates the constraint, then decays once the constraint holds,
 arriving at exactly $0$ in four seeds of six, with a final constraint value of $0$ in all six.
-Training therefore ends on the clean reward once avoidance has been learned, a transition
-that a fixed $p$ cannot provide.
+In those four seeds training ends on the clean reward once avoidance has been learned, a
+transition that a fixed $p$ cannot provide. The other two seeds retain a substantial weight
+($alpha = 6.1$, and $16.5$ after a peak of $20.1$ at 127.5k steps), so the penalty is not
+guaranteed to switch off within the training budget.
 #v(-10pt)
 \
 However, Lagrangian policies still

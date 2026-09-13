@@ -17,8 +17,8 @@ Model-based offline reinforcement learning policies can exploit regions of state
     common mitigation penalizes the reward by a data-density cost signal, scaled by a fixed
     weight that must be hand-tuned per environment. We instead treat the density constraint as
     a constrained MDP and learn the penalty weight online via Lagrangian dual ascent, so the
-    practitioner specifies an allowed constraint-violation rate instead of an arbitrary penalty
-    magnitude. We compare this Lagrangian weighting scheme against the fixed-weight baseline on
+    practitioner specifies a tolerance on the expected density cost instead of an arbitrary
+    penalty magnitude. We compare this Lagrangian weighting scheme against the fixed-weight baseline on
     a pendulum swing-up task with an excluded low-data zone, and test generalization on
     LunarLander. On the pendulum, a single Lagrangian setting matches the best results of the
     entire fixed-weight sweep without needing to search over $p$; on LunarLander, it lowers the
@@ -47,7 +47,7 @@ Model-based offline reinforcement learning policies can exploit regions of state
     ),
     
   ),
-  index-terms: ("Affective AI", "LLM", "VLM", "Intention Detection", "RL"),
+  index-terms: ("Offline reinforcement learning", "Safe reinforcement learning", "Constrained MDP", "Lagrangian methods", "Kernel density estimation"),
   bibliography: none,
   figure-supplement: [Fig.],
 )

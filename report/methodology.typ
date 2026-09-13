@@ -64,9 +64,9 @@ main-engine throttle and the lateral side-engine throttle. The objective is to l
 \
 As illustrated in the offline-data figure (@fig-ll-offline-zone), an excluded box-shaped
 region in $(x, y)$ position space is constructed as an artificial low-density zone rather than
-as a literal no-landing restriction in the environment. All offline trajectories that enter
-this box were removed from the training data, so the region becomes a sparse-coverage area
-with effectively zero observed samples:
+as a literal no-landing restriction in the environment. Offline transitions whose successor
+state lies in this box were not stored (@sec-protocol), so the region becomes a sparse-coverage
+area in the data:
 
 $
   (x, y) in [-0.075, 0.075] times [0.5, 1.0].
@@ -98,8 +98,11 @@ represented in the offline dataset. The penalty weight $p$ is fixed during
 training and is evaluated over a predefined parameter sweep:
 
 $
-  r_"train" = r_"task" - p dot c(s_t).
+  r_"train" = r_"task" - p dot c(s_(t+1)),
 $
+#v(-10pt)
+\
+i.e. @eq:penalized-reward with $w_t equiv p$; the cost is evaluated at the successor state.
 #v(-10pt)
 \
 
@@ -134,10 +137,11 @@ $
 #v(-10pt)
 \
 with $alpha >= 0$. During training, the multiplier is updated according to the
-observed constraint violation:
+observed constraint violation, using the empirical estimate $hat(C)$ of $C(pi)$ over the most
+recent training steps (@eq:dual-ascent):
 
 $
-  alpha <- max(0, alpha + eta_alpha (C(pi) - epsilon)).
+  alpha <- max(0, alpha + eta_alpha (hat(C) - epsilon)).
 $
 #v(-10pt)
 \
@@ -168,29 +172,43 @@ All four methods were evaluated in an initial exploratory experiment
   <appendix-pilot-experiment>,
   [Initial exploratory experiment],
 )).
-The ensemble and BNN methods showed weaker preliminary performance than the
-Lagrangian approach. Based on these initial findings, the main comparison was
-therefore restricted to the Lagrangian method and the fixed-weight baseline.
+In that pilot the ensemble and BNN methods scored below the Lagrangian approach.
+The pilot was not a controlled comparison, however: it used a mirrored excluded zone and a
+different reset and cost configuration, and the uncertainty methods were run on a different
+environment (E2) than the Lagrangian and the baseline (E1, E3). Its ranking is therefore only
+indicative. The main comparison was restricted to the Lagrangian method and the fixed-weight
+baseline mainly to keep the scope and compute budget manageable, and because these two
+methods share the same cost signal, so that they differ only in the weighting scheme.
 
 
 == Training and evaluation protocol <sec-protocol>
 *Offline dataset generation.*
 Prior to policy optimization, a fixed offline dataset was generated separately
-for each environment. Data were collected using random actions sampled from the
-corresponding action space over 2,000 episodes, with a maximum of 200 steps per
-episode. Environment resets and action sampling were seeded for reproducibility.
+for each environment. Data were collected using uniformly random actions over 2,000 episodes,
+with a maximum of 200 steps per episode, starting from Gymnasium's default initial-state
+distribution (for the pendulum, uniform over the circle, so that the upper half is covered).
+For the pendulum, actions were sampled from the torque interval. The LunarLander dataset was
+collected with the *discrete* action variant (random choice among no-op, left, main, and right
+engine), although policies are trained on the continuous variant; since the KDE uses only the
+position $(x, y)$, this changes how the state coverage was produced but not the form of the
+cost signal. Environment resets and action sampling were seeded for reproducibility.
 
 Each interaction produced a transition $(s_t, a_t, s_(t+1))$. If the next state
 $s_(t+1)$ lay inside the environment-specific excluded region, the transition
 was not stored, while the episode continued normally unless the environment
 terminated. This created a low-density region in the offline data without
-modifying the underlying environment dynamics.
+modifying the underlying environment dynamics. Because the episode continues, the transition
+stored after a dropped one starts from the in-zone state, so a small number of in-zone states
+remain in the observation column: 5 of 153,045 transitions for E1, 9 of 89,516 for E3, and 391
+of 177,858 for LunarLander.
 
 The collected transitions were stored as Parquet files containing the current
 observation, action, and next observation. The datasets were not used to train
 the policy directly. Instead, they were used to fit the KDE-based safety signal
-before policy optimization. The fitted KDE was then kept fixed during training,
-assigning higher safety costs to states with low estimated data density.
+before policy optimization. For computational cost, the KDE is fitted on a seeded random subset
+of 25,000 observations, and the reference density $rho_"ref"$ used by the continuous cost is the
+5th percentile of the estimated density over 2,000 of these. The fitted KDE was then kept fixed
+during training, assigning higher safety costs to states with low estimated data density.
 
 *Policy training and configurations.*
 For each task, the comparison consists of three fixed-weight baseline
@@ -210,7 +228,9 @@ therefore adapts the penalty strength continuously instead of selecting one of
 the three predefined baseline weights.
 
 All policies are trained using the Stable-Baselines3 implementation of Soft
-Actor-Critic (SAC) with an MLP policy for 150,000 (for LunarLander 300,000) environment steps. The KDE
+Actor-Critic (SAC) with an MLP policy for 150,000 (for LunarLander 300,000) environment steps.
+Training episodes use the environments' default time limits, 200 steps for the pendulum and 1,000
+steps for LunarLander. The KDE
 safety signal uses a bandwidth of 0.1 and is fitted on the positional part of the observation,
 $(cos theta, sin theta)$ for the pendulum and $(x, y)$ for LunarLander. For both pendulum methods and
 the LunarLander baseline, it uses a binary density threshold of 0.025:
@@ -219,9 +239,17 @@ threshold and a cost of 0 otherwise.
 The LunarLander Lagrangian configuration omitted this threshold, so its runs used the
 implementation's continuous fallback,
 $c(s) = max(0, 1 - hat(rho)(s) slash rho_"ref")$, where $rho_"ref" approx 0.10$ is the 5th percentile of
-the estimated density over offline states. This cost is non-zero on about $6.7%$ of offline states,
-compared with $0.7%$ under the binary threshold, so on LunarLander the two methods were not trained on
-the same cost signal.
+the estimated density over offline states. On a seeded random sample of 5,000 LunarLander offline
+states, this cost is non-zero on $5.6%$ of them, compared with $0.56%$ under the binary threshold, so
+on LunarLander the two methods were not trained on the same cost signal.
+#v(-10pt)
+\
+Both Lagrangian configurations use the ``cost'' constraint of @sec-metrics: $hat(C)$ is the mean
+cost over the last 500 training steps. On the pendulum, where the cost is binary, $epsilon = 0.01$
+therefore bounds the share of training steps in penalized (low-density) states at $1%$; this is
+not the same as the share of steps inside the excluded band (@sec-discussion). On LunarLander,
+$epsilon = 0.01$ bounds the mean of the continuous cost and has no direct interpretation as a
+rate.
 
 Each of the four configurations is repeated with six independent random seeds,
 numbered 0 through 5. This produces 18 fixed-weight baseline runs and six
@@ -236,12 +264,12 @@ steps using 50 episodes. These evaluations monitor policy development without
 affecting the policy updates.
 
 Each policy is evaluated over 200 episodes, with
-a maximum length of 200 (for LunarLander 500) steps per episode. Evaluation is performed in a
-separate, unpenalized environment using deterministic actions. Returns are
-calculated exclusively from the original task reward, while safety is measured
-separately using the zone-visit rate and the fraction of steps spent inside the
-excluded region. The final results are aggregated across the six seeds and
-reported using the mean and standard deviation.
+a maximum length of 200 (for LunarLander 500, i.e. half the training limit) steps per episode.
+Evaluation is performed in a separate, unpenalized environment using deterministic actions.
+Returns are calculated exclusively from the original task reward, while safety is measured
+separately using the zone-visit rate and the zone depth-weighted step fraction. The final
+results are aggregated across the six seeds and reported as the mean and the population
+standard deviation (normalized by $n$, not $n - 1$) of the run-level means.
 
 == Metrics <sec-metrics>
 #v(-10pt)
@@ -259,9 +287,8 @@ truncated episodes do not contribute additional padded steps.
   counts as a visit.
 - _Zone depth-weighted step fraction_: the episode mean of an environment-specific depth
   function $d(s) in [0, 1]$. For the pendulum, $d$ is zero outside the angular band and at
-  its edges, and increases linearly to one at the band centre. For a LunarLander box zone,
-  it is the minimum of the normalized distances to the two pairs of box boundaries; for the
-  legacy corridor zone, it reduces to the binary zone indicator. Averaging $d(s)$ combines
+  its edges, and increases linearly to one at the band centre. For the LunarLander box zone,
+  it is the minimum of the normalized distances to the two pairs of box boundaries. Averaging $d(s)$ combines
   entry frequency with penetration severity, so shallow boundary contacts contribute less than
   trajectories through the zone interior.
 - _Left/right path split_ (pendulum only): the sign of the cumulative unwrapped angle change
@@ -281,9 +308,6 @@ truncated episodes do not contribute additional padded steps.
   episodes that never reach it are assigned the episode limit (200 steps in E1/E3).
 - _Strict landing rate_ (LunarLander): the fraction of episodes ending in a terminal event
   with a positive terminal reward, corresponding to the environment's $+100$ landing bonus.
-- _Landing success rate_ (LunarLander): the strict landing events together with episodes whose
-  final state is touchdown-like (near the pad, sufficiently stable, or showing leg contact),
-  including timeouts. It is therefore a more permissive task-success measure.
 - _Crash rate_ and _timeout rate_ (LunarLander): terminal events with a non-positive terminal
   reward and episodes ending at the 500-step limit without termination, respectively. These
   categories are mutually exclusive with strict landing and partition the evaluated episodes.
@@ -298,8 +322,10 @@ constraint, $C$ is the fraction of *training steps* inside the excluded zone; wh
 per-episode zone visit rate reported at evaluation.
 #v(-10pt)
 \
-*Robustness and compute.* For each method, robustness is assessed from the spread of clean
-return and zone metrics across its own tuning-parameter sweep ($p$ for the baseline and
-$epsilon$ for the Lagrangian). Wall-clock training time is recorded with evaluation excluded;
-the Lagrangian's additional operation is the scalar dual update performed at the configured
-interval.
+*Robustness and compute.* Only a single tolerance, $epsilon = 0.01$, was trained for the
+Lagrangian, so its sensitivity to $epsilon$ is not measured; for the baseline, sensitivity to
+$p$ is read directly from the per-$p$ tables in the appendix. Wall-clock training time covers the
+full training call, including the intermediate evaluations (every 10,000 steps, 50 episodes)
+and their trajectory plots. Both methods perform the same intermediate evaluations, so the
+comparison is not biased by them; the Lagrangian's only additional operation is the scalar dual
+update at the configured interval.

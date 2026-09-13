@@ -24,8 +24,9 @@ unconstrained penalty term, and cast the problem as a constrained Markov decisio
 penalty weight becomes a Lagrange multiplier, updated online via dual ascent so that it grows
 when the policy violates the constraint more often than allowed and shrinks otherwise. Under
 this formulation, the practitioner no longer chooses a penalty magnitude directly; instead they
-specify an *allowed violation rate* $epsilon$ (a quantity with a direct operational
-meaning), and the weight is learned to enforce it. We compare this Lagrangian weighting scheme
+specify a *tolerance* $epsilon$ on the expected per-step density cost (for a binary cost, the
+allowed share of steps in penalized states, a quantity with a direct operational meaning), and
+the weight is learned to enforce it. We compare this Lagrangian weighting scheme
 against the fixed-weight baseline under otherwise identical conditions: the same data-density
 cost signal, the same agent, and the same evaluation protocol, so that any difference in
 outcome is attributable to the weighting scheme alone.
@@ -36,7 +37,7 @@ outcome is attributable to the weighting scheme alone.
   conditions differ *only* in the weight component (same cost signal, same agent, same
   evaluation protocol), so the comparison isolates a single design choice.
 - An empirical comparison of fixed-weight and Lagrangian-weight penalization on a pendulum
-  swing-up task with an excluded, low-data zone, including how each method's performance and
-  safety trade-off responds to its own hyperparameter sweep.
+  swing-up task with an excluded, low-data zone, comparing a single Lagrangian tolerance against
+  each setting of the baseline's penalty sweep.
 - A generalization test on LunarLander, checking that any advantage observed on the pendulum
   task is not an artifact of its particular geometry or excluded-zone construction.

@@ -1,2 +1,2 @@
 ENVIRONMENTS,SEEDS,TRAINING,EVALUATION,KNOB SWEEP,SCORING
-"E1 paper zone · E2 uncertainty≠density testbed · E3 shifted zone","2","150,000 SAC steps, full length","500 episodes","p / weight / ε","Weighted rubric: safety 30% · return 25% · robustness 20% · compute 15% · signal 10%"
+"Legacy mirrored zone (|θ| band) · baseline and lagr: E1/E3 · ens and bnn: E2 (chaotic band) only","2","150,000 SAC steps; gym uniform reset; continuous KDE cost (no threshold)","2000 episodes","baseline p ∈ {2, 10, 30} · ens/bnn weight ∈ {0.2, 0.6, 1.0} · lagr ε ∈ {0.02, 0.05}, zone constraint","Weighted rubric: safety 30% · return 25% · robustness 20% · compute 15% · signal 10%"

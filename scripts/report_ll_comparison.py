@@ -17,7 +17,6 @@ import numpy as np
 METRICS = [
     ("zone_depth_mean", "Zone depth-weighted step fraction", True),
     ("true_return_mean", "True return", False),
-    ("landing_success_rate", "Landing success rate", False),
     ("strict_landing_rate", "Strict landing rate", False),
     ("crash_rate", "Crash rate", True),
     ("timeout_rate", "Timeout rate", True),

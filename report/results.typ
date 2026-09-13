@@ -73,8 +73,9 @@
   caption: figure.caption(position: bottom)[
     Pendulum E1, clean-reward evaluation (200 episodes/seed). Baseline pools
     $p in {2, 10, 30}$ (6 seeds each, $n=18$); Lagrangian is $epsilon = 0.01$
-    (6 seeds, $n=6$). Bold marks the better mean per row; see @sec-metrics for
-    the zone depth-weighted metric.
+    (6 seeds, $n=6$). Mean $plus.minus$ population standard deviation of the run-level
+    means. Bold marks the better mean per row; see @sec-metrics for the zone
+    depth-weighted metric.
   ],
 ) <tab-pendulum-pooled>
 #v(-10pt)
@@ -102,9 +103,9 @@ so the mean constraint value $C$ spikes to roughly $0.09$ around step 5k, while 
 exploration policy still routes through the zone. $alpha$ climbs in response,
 from its initialized value of $5$ to a peak of about $12.5$ around step 30k-40k, sharply raising the effective penalty until the policy learns a zone-avoiding route and $C$ falls back under $epsilon$.
 From there the two signals decouple by seed: once $C$ stays below $epsilon$, dual ascent pulls $alpha$ back down, and in 4 of 6 seeds it reaches exactly $0$ by the end of training: the penalty switches itself off entirely once it is no longer needed.
-The remaining two seeds keep a small residual weight, consistent with occasional late-training excursions
-visible as the noisy individual $C$ traces that briefly poke back above
-$epsilon$ in the right panel.
+The remaining two seeds do not settle this way. Seed 1 peaks at $14.5$ and ends at $alpha = 6.1$; seed 4 keeps climbing until step 127.5k, peaks at $20.1$, and ends at $16.5$, above both $p=10$ and the peak of the mean curve.
+Both are consistent with late-training excursions, visible as the individual $C$ traces that poke back above
+$epsilon$ in the right panel, although the final constraint value is $0$ in all six seeds.
 No baseline weight is adjusted this way: a fixed
 $p$ pays the same cost throughout training regardless of whether the
 constraint is already satisfied.
@@ -137,7 +138,6 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
 #let display = (
   "Zone depth-weighted step fraction": (label: [Zone depth-weighted \ step fraction], percent: true, decimals: 3),
   "True return": (label: [True return], percent: false, decimals: 1),
-  "Landing success rate": (label: [Landing success rate], percent: true, decimals: 1),
   "Strict landing rate": (label: [Strict landing rate], percent: true, decimals: 1),
   "Crash rate": (label: [Crash rate], percent: true, decimals: 1),
   "Timeout rate": (label: [Timeout rate], percent: true, decimals: 1),
@@ -192,12 +192,13 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
   caption: figure.caption(position: bottom)[
    LunarLander, clean-reward evaluation (200 episodes/seed). Baseline pools
    $p in {2, 10, 30}$ (6 seeds each); Lagrangian uses a fixed
-   $epsilon = 0.01$ (6 seeds). Bold marks the better mean per row.
+   $epsilon = 0.01$ (6 seeds). Mean $plus.minus$ population standard deviation of the
+   run-level means. Bold marks the better mean per row.
   ],
 ) <tab-ll-pooled>
 
-Pooled against the baseline sweep, lagr reports a higher true return, landing success rate,
-and strict landing rate, a substantially lower crash rate, and a comparable timeout rate and
+Pooled against the baseline sweep, lagr reports a higher true return and strict landing
+rate, a substantially lower crash rate, and a comparable timeout rate and
 zone depth-weighted step fraction (@tab-ll-pooled); @sec-discussion examines these differences
 against the baseline's individual $p$ settings rather than the pool.
 @fig-ll-combined-traj in the appendix visualizes the corresponding evaluation trajectories.
