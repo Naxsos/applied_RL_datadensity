@@ -57,3 +57,15 @@ the `lagr_E1` config with tiny step/eval-episode counts so `run.py`'s full path 
 training, eval, `metrics.json`) is exercised without waiting on real training. It won't
 produce meaningful `zone_visit_rate`/`return` numbers (2000 steps isn't enough to swing up) —
 it only checks that the run completes and metrics.json is well-formed.
+
+## LunarLander comparison (LL)
+
+```bash
+python scripts/generate_offline_data.py --env LL
+bash scripts/run_matrix_LL.sh
+```
+
+`run_matrix_LL.sh` sweeps the LL baseline over `p in {2, 10, 30}` and the LL Lagrangian
+variant over `epsilon = 0.01`, using 6 seeds per setting. The default run length is
+`total_steps: 300000` and the default evaluation horizon is `eval_episodes: 200` with
+`max_steps: 500`.
