@@ -10,7 +10,7 @@ import yaml
 
 def _default_lunar_zone_cfg():
     """Return the canonical LL box-zone config from the repo config directory."""
-    cfg_path = Path(__file__).resolve().parents[1] / "configs" / "ll_box_zone.yaml"
+    cfg_path = Path(__file__).resolve().parents[1] / "configs" / "LL_box_zone.yaml"
     if not cfg_path.exists():
         raise FileNotFoundError(f"Missing LL box-zone config: {cfg_path}")
     data = yaml.safe_load(cfg_path.read_text()) or {}

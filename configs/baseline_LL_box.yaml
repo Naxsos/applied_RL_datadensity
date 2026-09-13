@@ -13,17 +13,17 @@ transition_model:
   act_dim: 2
 cost_signal:
   type: kde_density
-  bandwidth: 0.25
+  bandwidth: 0.1
   ref_percentile: 5.0
+  threshold: 0.025
 weight:
   type: fixed
   p: 2.0
 agent:
   algo: sac
-  learning_rate: 0.0003
   total_steps: 300000
 eval:
-  episodes: 100
+  episodes: 200
   max_steps: 500
   reward: clean
 compute:

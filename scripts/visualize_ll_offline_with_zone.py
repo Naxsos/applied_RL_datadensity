@@ -50,7 +50,7 @@ def main() -> None:
 
     # Zone definition comes from the canonical LL config file.
     repo_root = Path(__file__).resolve().parent.parent
-    zone_cfg = yaml.safe_load((repo_root / "configs" / "ll_box_zone.yaml").read_text())
+    zone_cfg = yaml.safe_load((repo_root / "configs" / "LL_box_zone.yaml").read_text())
     zone_x = tuple(zone_cfg["x"])
     zone_y = tuple(zone_cfg["y"])
     zone_mask = (x >= zone_x[0]) & (x <= zone_x[1]) & (y >= zone_y[0]) & (y <= zone_y[1])
@@ -76,7 +76,7 @@ def main() -> None:
     ax.scatter(x[zone_mask], y[zone_mask], **zone_style)
     ax.add_patch(plt.Rectangle(
         (zone_x[0], zone_y[0]), zone_x[1] - zone_x[0], zone_y[1] - zone_y[0],
-        fill=False, edgecolor='tab:blue', linewidth=2, label='zone box'
+        fill=False, edgecolor='red', linewidth=2, label='zone box'
     ))
     ax.set_xlabel("x position")
     ax.set_ylabel("y altitude")
@@ -108,15 +108,15 @@ def main() -> None:
 
     # Legend
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False)
+    fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False)
 
     zone_in_data = zone_mask.mean() * 100.0
     fig.suptitle(
         f"LunarLander offline data (zone-filtered): {len(df)} transitions\n"
         f"Zone box coverage: {zone_in_data:.2f}% (should be 0 or very low)",
-        y=0.98,
+        y=0.97,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.tight_layout(rect=(0, 0.05, 1, 0.93))
     fig.savefig(out_path)
     plt.close(fig)
 

@@ -1,0 +1,35 @@
+method: lagr
+env:
+  id: LL
+  continuous: true
+  offline_dataset: data/LL_offline.parquet
+  excluded_zone: box
+transition_model:
+  type: lstm
+  frozen_checkpoint: null
+  obs_dim: 8
+  act_dim: 2
+cost_signal:
+  type: kde_density
+  bandwidth: 0.1
+  ref_percentile: 5.0
+weight:
+  type: lagrangian
+  constraint: cost
+  epsilon: 0.01
+  eta_alpha: 10
+  alpha_init: 5.0
+  alpha_max: null
+  update_freq: 500
+agent:
+  algo: sac
+  total_steps: 300000
+eval:
+  episodes: 200
+  max_steps: 500
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000
+  device: mps
+run_id: lagr_LL_epsilon0.01_seed2_v3matrix
+seed: 2

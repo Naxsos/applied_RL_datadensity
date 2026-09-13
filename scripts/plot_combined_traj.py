@@ -53,6 +53,7 @@ def main():
     for ax in axes[n:]:
         ax.axis("off")
 
+    group_data = []
     for ax, (label, dirs) in zip(axes, groups):
         # load and concatenate npy files
         all_obs = []
@@ -70,29 +71,62 @@ def main():
         # detect method from first run's config
         cfg = yaml.safe_load((Path(dirs[0]) / "config.yaml").read_text())
         method = cfg.get("method", "baseline")
+        group_data.append((ax, label, dirs, obs, cfg, method))
 
-        # plot
-        xs, ys = obs[:, 1], obs[:, 0]  # sin θ, cos θ
-        color = METHOD_COLOR.get(method, "#333333")
-        cmap = mcolors.LinearSegmentedColormap.from_list("w2m", ["#ffffff", color])
-        ax.hexbin(xs, ys, gridsize=40, cmap=cmap, linewidths=0.2,
-                  mincnt=1, bins="log", zorder=1)
+    shared_ll_limits = None
+    if group_data:
+        first_cfg = group_data[0][4]
+        if first_cfg["env"].get("id") == "LL":
+            xs_all = np.concatenate([obs[:, 0] for _, _, _, obs, _, _ in group_data])
+            ys_all = np.concatenate([obs[:, 1] for _, _, _, obs, _, _ in group_data])
+            from denrl.env_lunar_lander import as_lunar_zone
+            zone = as_lunar_zone(first_cfg["env"].get("excluded_zone", None))
+            x_min = min(float(xs_all.min()), float(getattr(zone, "x_min", xs_all.min())))
+            x_max = max(float(xs_all.max()), float(getattr(zone, "x_max", xs_all.max())))
+            y_min = min(float(ys_all.min()), float(getattr(zone, "y_min", ys_all.min())))
+            y_max = max(float(ys_all.max()), float(getattr(zone, "y_max", ys_all.max())))
+            pad_x = max(0.15, 0.05 * (x_max - x_min))
+            pad_y = max(0.15, 0.05 * (y_max - y_min))
+            shared_ll_limits = (x_min - pad_x, x_max + pad_x, y_min - pad_y, y_max + pad_y)
 
-        # zone arc
-        from denrl.env import as_zone, ZONE_LOW, ZONE_HIGH
-        zone = as_zone(cfg["env"].get("excluded_zone", (ZONE_LOW, ZONE_HIGH)),
-                       symmetric=cfg["env"].get("zone_symmetric", False))
-        _draw_zone_arc(ax, zone)
+    for ax, label, dirs, obs, cfg, method in group_data:
+        env_id = cfg["env"].get("id")
+        if env_id == "LL":
+            xs, ys = obs[:, 0], obs[:, 1]
+            x_label, y_label = "x", "y"
+            from denrl.env_lunar_lander import as_lunar_zone
+            zone = as_lunar_zone(cfg["env"].get("excluded_zone", None))
+            ax.hexbin(xs, ys, gridsize=40, cmap=mcolors.LinearSegmentedColormap.from_list("w2m", ["#ffffff", METHOD_COLOR.get(method, "#333333")]), linewidths=0.2,
+                      mincnt=1, bins="log", zorder=1)
+            _draw_zone_arc(ax, zone)
+            if shared_ll_limits is not None:
+                ax.set_xlim(shared_ll_limits[0], shared_ll_limits[1])
+                ax.set_ylim(shared_ll_limits[2], shared_ll_limits[3])
+            else:
+                ax.set_xlim(min(xs.min(), zone.x_min) - 0.2, max(xs.max(), zone.x_max) + 0.2)
+                ax.set_ylim(min(ys.min(), zone.y_min) - 0.1, max(ys.max(), zone.y_max) + 0.1)
+            ax.set_xlabel(x_label, fontsize=9)
+            ax.set_ylabel(y_label, fontsize=9)
+            ax.set_aspect("equal")
+        else:
+            xs, ys = obs[:, 1], obs[:, 0]  # sin θ, cos θ
+            color = METHOD_COLOR.get(method, "#333333")
+            cmap = mcolors.LinearSegmentedColormap.from_list("w2m", ["#ffffff", color])
+            ax.hexbin(xs, ys, gridsize=40, cmap=cmap, linewidths=0.2,
+                      mincnt=1, bins="log", zorder=1)
+            from denrl.env import as_zone, ZONE_LOW, ZONE_HIGH
+            zone = as_zone(cfg["env"].get("excluded_zone", (ZONE_LOW, ZONE_HIGH)),
+                           symmetric=cfg["env"].get("zone_symmetric", False))
+            _draw_zone_arc(ax, zone)
+            th = np.linspace(0, 2 * np.pi, 300)
+            ax.plot(np.sin(th), np.cos(th), "k-", lw=0.6, alpha=0.3, zorder=4)
+            ax.set_xlim(1.15, -1.15)
+            ax.set_ylim(-1.15, 1.15)
+            ax.set_aspect("equal")
+            ax.set_xlabel("sin θ", fontsize=9)
+            ax.set_ylabel("cos θ", fontsize=9)
 
-        # unit circle
-        th = np.linspace(0, 2 * np.pi, 300)
-        ax.plot(np.sin(th), np.cos(th), "k-", lw=0.6, alpha=0.3, zorder=4)
-        ax.set_xlim(1.15, -1.15)
-        ax.set_ylim(-1.15, 1.15)
-        ax.set_aspect("equal")
-        ax.set_xlabel("sin θ", fontsize=9)
-        ax.set_ylabel("cos θ", fontsize=9)
-        ax.set_title(f"{label}  ({len(dirs)} seeds)", fontsize=10, color=color, fontweight="bold")
+        ax.set_title(f"{label}  ({len(dirs)} seeds)", fontsize=10, color=METHOD_COLOR.get(method, "#333333"), fontweight="bold")
         ax.tick_params(labelsize=8)
 
     out = Path(args.out)
