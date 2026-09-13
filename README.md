@@ -39,6 +39,14 @@ below).
 | `models/` | Frozen trained transition models (`E2_ensemble.pt`, `E2_bnn.pt`) used by the uncertainty methods. |
 | `figures/` | Generated plots referenced by the writeup. |
 
+## Manual reference policy (Pendulum)
+```bash
+python scripts/manual_policy.py --episodes 20 --start-noise 0.02
+python scripts/manual_policy.py --keyboard  # optional manual control
+```
+
+The manual reference policy provides a non-RL feasibility check for the excluded-zone task. The automatic controller first replays a precomputed bang-bang-style swing-up sequence and then switches to a clipped PD controller for balancing. It uses no SAC model, KDE signal, or reward penalty.
+
 ## Baseline vs Lagrangian comparison (E1, local pass)
 ```bash
 python scripts/generate_offline_data.py --env E1   # if data/E1_offline.parquet doesn't exist yet
