@@ -249,9 +249,6 @@ truncated episodes do not contribute additional padded steps.
 - _Zone visit rate_: the fraction of evaluation episodes that contain at least one observed
   state in the excluded zone. This is an episode-level measure; a single-step boundary crossing
   counts as a visit.
-- _Zone step fraction_: for episode $e$, $T_e^(-1) sum_(t=1)^(T_e) z_(e,t)$, where
-  $z_(e,t) = bb(1)[s_(e,t) in Z]$. It is the average fraction of executed steps spent in the
-  zone and is distinct from the episode-level visit rate used above.
 - _Zone depth-weighted step fraction_: the episode mean of an environment-specific depth
   function $d(s) in [0, 1]$. For the pendulum, $d$ is zero outside the angular band and at
   its edges, and increases linearly to one at the band centre. For a LunarLander box zone,
