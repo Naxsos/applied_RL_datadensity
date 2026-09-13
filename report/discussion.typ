@@ -31,7 +31,7 @@ That weighting compensates for the smoothing at the level of the reported metric
 == Generalizing to LunarLander
 #v(-10pt)
 \
-LunarLander changes several things at once relative to the pendulum: a landing task rather than a swing-up, an 8-dimensional observation against the pendulum's 3, and four discrete thrusters against a single continuous torque, so whatever transfers here is not simply a restatement of the pendulum result on a relabeled environment.
+LunarLander changes several things at once relative to the pendulum: a landing task rather than a swing-up, an 8-dimensional observation against the pendulum's 3, and four discrete actions for the thrusters against a single continuous torque, so whatever transfers here is not simply a restatement of the pendulum result on a relabeled environment.
 #v(-10pt)
 \
 Pooled against the entire baseline sweep, @tab-ll-pooled shows lagr ahead on six of seven metrics, but that comparison flatters it: $p=30$, the weakest setting in the pool (lowest return, highest zone depth-weighted fraction of all four groups), drags the pooled baseline average down and inflates lagr's apparent margin over it.
@@ -55,4 +55,4 @@ This matches the depth-weighted step fraction in @tab-ll-pooled and @tab-ll-by-p
 #v(-10pt)
 \
 The pendulum's soft-boundary explanation (@sec-metrics's edge decay of the KDE density) does not obviously account for this: it explains why a policy that is otherwise avoiding a zone still grazes its edge, not why every penalty weight tested, including the largest, fails to produce any visible avoidance at all.
-A more likely explanation is geometric: the box sits inside the funnel every landing trajectory must pass through en route to the pad (@fig-ll-offline-zone), and that same corridor is also the most direct and stable approach to the platform, so steering around the box trades stability for avoidance rather than getting both for free the way the pendulum's alternate swing-up side does; no penalty magnitude tested changes this qualitative trade.On the evidence collected, the honest conclusion is that additional tuning may be needed before the LunarLander zone can be treated as a fair test of avoidance at all, rather than that density-based avoidance transfers to this environment as-is.
+A more likely explanation is geometric: the box sits inside the funnel every landing trajectory must pass through en route to the pad (@fig-ll-offline-zone), and that same corridor is also the most direct and stable approach to the platform, so steering around the box trades stability for avoidance rather than getting both for free the way the pendulum's alternate swing-up side does; no penalty magnitude tested changes this qualitative trade. On the evidence collected, the honest conclusion is that additional tuning may be needed before the LunarLander zone can be treated as a fair test of avoidance at all, rather than that density-based avoidance transfers to this environment as-is.
