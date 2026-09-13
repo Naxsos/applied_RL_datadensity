@@ -162,8 +162,8 @@ Each run is isolated in its own process and the matrix uses a resumable, paralle
 Useful overrides:
 ```bash
 SEEDS="0 1" PARALLEL=2 ./scripts/run_matrix_LL.sh
-STEPS=300000 EVAL_EPISODES=300 SUFFIX=pilot ./scripts/run_matrix_LL.sh
-PY=.venv/bin/python PARALLEL=3 ./scripts/run_matrix_LL.sh
+STEPS=300000 EVAL_EPISODES=300 SUFFIX="pilot" ./scripts/run_matrix_LL.sh
+PY=".venv/bin/python" PARALLEL=3 ./scripts/run_matrix_LL.sh
 ```
 
 Run directories are named like:
