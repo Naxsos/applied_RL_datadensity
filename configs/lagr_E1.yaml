@@ -27,13 +27,12 @@ weight:
                                # With binary threshold, cost is 0 or 1, so C is in the same
                                # range as zone step fraction.
   epsilon: 0.01               # allowed zone-violation rate, PER TRAINING STEP
-                               # (sweep {0.02, 0.05}). Not a bound on the reported
-                               # per-episode zone_visit_rate, which runs higher.
+                               
   eta_alpha: 10               # α must be able to reach the baseline's p~10 within
                                # the run: 150k steps / update_freq 500 = 300 dual
                                # steps, so η·Σ(C−ε) ≈ 0.1·300·0.3 ≈ 9. η=0.01 with
                                # update_freq 1000 moved α by ~1 total = fixed weight.
-  alpha_init: 5.0              # start at baseline's p=10; α adapts down if constraint is met
+  alpha_init: 5.0              
   alpha_max: null
   update_freq: 500             # dual step every N env steps
 agent:
