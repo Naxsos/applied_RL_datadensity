@@ -1,0 +1,33 @@
+{
+  "zone_visit_rate": 0.155,
+  "zone_step_frac": 0.015626481657313417,
+  "zone_depth_mean": 0.004995126298225189,
+  "zone_steps_mean": 6.285,
+  "left_path_pct": null,
+  "right_path_pct": null,
+  "true_return_mean": 174.59609841484104,
+  "true_return_std": 95.49925848520847,
+  "upright_success_rate": null,
+  "time_to_upright_mean": null,
+  "episode_len_mean": 402.63,
+  "landing_success_rate": 0.865,
+  "strict_landing_rate": 0.645,
+  "crash_rate": 0.03,
+  "timeout_rate": 0.325,
+  "cost_vs_forecast_err_corr": null,
+  "penalizes_region": null,
+  "run_id": "baseline_LL_p30.0_seed1_v3matrix",
+  "method": "baseline",
+  "env": "LL",
+  "seed": 1,
+  "wall_clock_train_s": 2667.5,
+  "peak_mem_mb": 500.2,
+  "n_models": 1,
+  "fits_local": true,
+  "hparam": {
+    "knob": "p",
+    "value": 30.0
+  },
+  "device": "mps",
+  "p": 30.0
+}
