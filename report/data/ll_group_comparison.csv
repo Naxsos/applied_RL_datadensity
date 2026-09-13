@@ -1,7 +1,6 @@
 metric,lower_is_better,baseline_mean,baseline_std,baseline_n,lagr_mean,lagr_std,lagr_n
 Zone depth-weighted step fraction,1,0.011137,0.004912,18,0.009534,0.001865,6
 True return,0,233.141633,52.373457,18,243.624486,63.774976,6
-Landing success rate,0,0.957222,0.075521,18,0.979167,0.046585,6
 Strict landing rate,0,0.815278,0.252628,18,0.844167,0.330699,6
 Crash rate,1,0.023611,0.033945,18,0.000833,0.001863,6
 Timeout rate,1,0.161111,0.244333,18,0.155000,0.328836,6

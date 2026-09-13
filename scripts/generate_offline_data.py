@@ -90,6 +90,9 @@ def main():
             if zone.contains(nxt):
                 # Keep the episode alive and allow the agent to fly through the zone,
                 # but do not store the in-zone transition in the offline dataset.
+                # NOTE: the NEXT stored row then has this in-zone state as its obs, so a
+                # few in-zone states reach the KDE fit (E1: 5, E3: 9, LL: 391). Kept as-is
+                # so the frozen datasets used in the report stay reproducible.
                 obs = nxt
                 if term or trunc:
                     break

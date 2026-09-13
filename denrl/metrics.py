@@ -79,7 +79,7 @@ def evaluate_policy(model, clean_env, n_episodes: int = 2000, max_steps: int = 2
                 timeout = timeout or bool(trunc)
             if term or trunc:
                 break
-        if env_is_ll and (not strict_landed) and _ll_touchdown_like(last_obs):
+        if env_is_ll and (not strict_landed) and (not crashed) and _ll_touchdown_like(last_obs):
             landed_at = t if landed_at is None else landed_at
         if env_is_ll and not (term or trunc):
             timeout = True
