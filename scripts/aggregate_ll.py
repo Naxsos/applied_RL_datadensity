@@ -9,9 +9,10 @@ from pathlib import Path
 import pandas as pd
 
 LL_WEIGHTS = {
-    "strict_landing_rate": (0.30, "max"),
+    "strict_landing_rate": (0.25, "max"),
     "landing_success_rate": (0.20, "max"),
-    "zone_visit_rate": (0.20, "min"),
+    "zone_depth_mean": (0.20, "min"),
+    "zone_visit_rate": (0.15, "min"),
     "true_return_mean": (0.15, "max"),
     "crash_rate": (0.10, "min"),
     "timeout_rate": (0.05, "min"),
@@ -19,6 +20,7 @@ LL_WEIGHTS = {
 
 LL_METRICS = [
     "zone_visit_rate",
+    "zone_depth_mean",
     "true_return_mean",
     "true_return_std",
     "landing_success_rate",
@@ -76,13 +78,13 @@ def aggregate_ll(df: pd.DataFrame) -> pd.DataFrame:
 def to_markdown(agg: pd.DataFrame) -> str:
     lines = [
         "# LL Decision Table\n",
-        "| method | knob | value | n_runs | strict_landing | landing_success | zone_visit | return | crash | timeout | episode_len | wall_clock_s | weighted_total |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| method | knob | value | n_runs | strict_landing | landing_success | zone_visit | zone_depth | return | crash | timeout | episode_len | wall_clock_s | weighted_total |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for _, row in agg.iterrows():
         lines.append(
             "| {method} | {knob} | {value:.3f} | {n_runs:d} | {strict:.3f} | {landing:.3f} | "
-            "{zone:.3f} | {ret:.1f} | {crash:.3f} | {timeout:.3f} | {ep_len:.1f} | {wall:.1f} | {score:.3f} |".format(
+            "{zone:.3f} | {zone_depth:.5f} | {ret:.1f} | {crash:.3f} | {timeout:.3f} | {ep_len:.1f} | {wall:.1f} | {score:.3f} |".format(
                 method=row["method"],
                 knob=row["knob"] or "-",
                 value=float(row["knob_value"]),
@@ -90,6 +92,7 @@ def to_markdown(agg: pd.DataFrame) -> str:
                 strict=float(row["strict_landing_rate_mean"]),
                 landing=float(row["landing_success_rate_mean"]),
                 zone=float(row["zone_visit_rate_mean"]),
+                zone_depth=float(row["zone_depth_mean_mean"]),
                 ret=float(row["true_return_mean_mean"]),
                 crash=float(row["crash_rate_mean"]),
                 timeout=float(row["timeout_rate_mean"]),

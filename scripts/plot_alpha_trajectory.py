@@ -7,6 +7,8 @@ alpha trajectory over training, plus constraint value C vs. epsilon.
 Usage:
     python scripts/plot_alpha_trajectory.py --runs 'runs/vis/lagr_E1_epsilon0.01_seed*' \
         --epsilon 0.01 --out figures/alpha_trajectory.png
+    python scripts/plot_alpha_trajectory.py --runs 'runs/**/lagr_LL_*_seed*' \
+        --epsilon 0.05 --out figures/ll_alpha_trajectory.png
 """
 from __future__ import annotations
 import argparse
@@ -26,13 +28,23 @@ _STEP_FMT = FuncFormatter(lambda x, _: f"{int(x / 1000)}k" if x else "0")
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--runs", default="runs/vis/lagr_E1_epsilon0.01_seed*",
-                     help="glob pattern matching one run dir per seed")
+    ap.add_argument(
+        "--runs",
+        nargs="+",
+        default=[
+            "runs/**/lagr_*_seed*",
+            "runs/**/lagr_*_seed*_matrix*",
+        ],
+        help="one or more glob patterns matching run dirs (for example: 'runs/vis/lagr_E1_epsilon0.01_seed*' or 'runs/**/lagr_LL_*_seed*')",
+    )
     ap.add_argument("--epsilon", type=float, default=0.01)
     ap.add_argument("--out", default="figures/alpha_trajectory.png")
     args = ap.parse_args()
 
-    run_dirs = sorted(Path(p) for p in glob.glob(args.runs))
+    matched = []
+    for pattern in args.runs:
+        matched.extend(glob.glob(pattern, recursive=True))
+    run_dirs = sorted({Path(p) for p in matched if Path(p).is_dir()})
     if not run_dirs:
         raise SystemExit(f"no run dirs matched: {args.runs}")
 
@@ -42,9 +54,25 @@ def main():
         if not csv_path.exists():
             print(f"  warning: {csv_path} not found, skipping")
             continue
-        seeds.append(pd.read_csv(csv_path))
+        df = pd.read_csv(csv_path)
+        required = {"step", "alpha", "constraint_C"}
+        missing = required - set(df.columns)
+        if missing:
+            print(f"  warning: {csv_path} missing columns {sorted(missing)}, skipping")
+            continue
+        if seeds and len(df) != len(seeds[0]):
+            print(
+                f"  warning: {csv_path} has {len(df)} rows but expected {len(seeds[0])}; "
+                "skipping to keep a common step grid across seeds"
+            )
+            continue
+        seeds.append(df)
 
-    # all seeds share the same update_freq/total_steps, so a common step grid works
+    if not seeds:
+        raise SystemExit(f"no valid alpha.csv files found in: {args.runs}")
+
+    # all selected seeds should share the same update_freq/total_steps; if a run set
+    # mixes old and newer LL revisions, skip the mismatched ones instead of crashing.
     steps = seeds[0]["step"].to_numpy()
     alpha_mat = np.stack([s["alpha"].to_numpy() for s in seeds])
     C_mat = np.stack([s["constraint_C"].to_numpy() for s in seeds])

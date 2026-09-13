@@ -10,9 +10,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-read -r -a SEEDS <<< "${SEEDS:-0 1 2}"
+read -r -a SEEDS <<< "${SEEDS:-0 1 2 3 4 5}"
 STEPS=${STEPS:-300000}
-EVAL_EPISODES=${EVAL_EPISODES:-100}
+EVAL_EPISODES=${EVAL_EPISODES:-200}
 PARALLEL=${PARALLEL:-4}
 SUFFIX=${SUFFIX:-matrix}
 PY=${PY:-python}
@@ -51,8 +51,8 @@ PY
 }
 
 {
-  sweep configs/baseline_LL.yaml p 0.0 2.0 10.0 30.0
-  sweep configs/lagr_LL.yaml epsilon 0.02 0.05 0.1
+  sweep configs/baseline_LL_box.yaml p 2.0 10.0 30.0
+  sweep configs/lagr_LL_box.yaml epsilon 0.01
 } > "$JOBFILE"
 
 declare -a jobs=()

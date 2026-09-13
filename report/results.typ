@@ -2,7 +2,7 @@
 
 = Results Jonas: Lunar Lander; Gerrit: Pendulum<sec-results>
 
-== Pendulum (E1): baseline vs. Lagrangian
+== Pendulum (E1): Baseline vs. Lagrangian
 
 #let rows = csv("data/group_comparison.csv", row-type: dictionary)
 
@@ -33,13 +33,13 @@
 
 #let pretty-label(gid) = {
   if gid == "baseline" {
-    [Baseline ($p in {2, 10, 30}$)]
+    [Baseline\ ($p in {2, 10, 30}$)]
   } else if gid == "lagr" {
-    [Lagr ($epsilon = 0.01$)]
+    [Lagr\ ($epsilon = 0.01$)]
   } else if gid.starts-with("baseline_p") {
-    [Baseline ($p = #gid.slice(10)$)]
+    [Baseline\ ($p = #gid.slice(10)$)]
   } else if gid.starts-with("lagr_epsilon") {
-    [Lagr ($epsilon = #gid.slice(12)$)]
+    [Lagr\ ($epsilon = #gid.slice(12)$)]
   } else { raw(gid) }
 }
 
@@ -80,7 +80,7 @@
 #v(-10pt)
 \
 Lagrangian weighting matches or beats the pooled baseline on every metric in
-@tab-pendulum-pooled: $4.2 times$ shallower zone penetration, higher return, far more consistent upright success, and faster swing-up, at almost equal wall-clock cost. 
+@tab-pendulum-pooled: $4.2 times$ shallower zone penetration, higher return, far more consistent upright success, and faster swing-up, at almost equal wall-clock cost.
 @fig-alpha-trajectory shows why: $alpha$ rises while
 the constraint is violated and decays toward 0 once $C < epsilon$, auto-tuning
 the penalty instead of relying on a hand-picked $p$.
@@ -100,11 +100,11 @@ the penalty instead of relying on a hand-picked $p$.
 Early in training the policy has not yet learned to avoid the excluded band,
 so the mean constraint value $C$ spikes to roughly $0.09$ around step 5k, while the underlying random-ish
 exploration policy still routes through the zone. $alpha$ climbs in response,
-from its initialized value of $5$ to a peak of about $12.5$ around step 30k-40k, sharply raising the effective penalty until the policy learns a zone-avoiding route and $C$ falls back under $epsilon$. 
-From there the two signals decouple by seed: once $C$ stays below $epsilon$, dual ascent pulls $alpha$ back down, and in 4 of 6 seeds it reaches exactly $0$ by the end of training: the penalty switches itself off entirely once it is no longer needed. 
+from its initialized value of $5$ to a peak of about $12.5$ around step 30k-40k, sharply raising the effective penalty until the policy learns a zone-avoiding route and $C$ falls back under $epsilon$.
+From there the two signals decouple by seed: once $C$ stays below $epsilon$, dual ascent pulls $alpha$ back down, and in 4 of 6 seeds it reaches exactly $0$ by the end of training: the penalty switches itself off entirely once it is no longer needed.
 The remaining two seeds keep a small residual weight, consistent with occasional late-training excursions
 visible as the noisy individual $C$ traces that briefly poke back above
-$epsilon$ in the right panel. 
+$epsilon$ in the right panel.
 No baseline weight is adjusted this way: a fixed
 $p$ pays the same cost throughout training regardless of whether the
 constraint is already satisfied.
@@ -113,11 +113,11 @@ constraint is already satisfied.
 The four panels in @fig-vis-trajectories trace the same avoid-versus-cross trade-off that the
 left/right path split quantifies. Under $p=2$ the density visibly overlaps the red wedge
 on both sides, and the swing direction is random across seeds: the penalty is too weak to consistently steer
-the policy away from the shorter, zone-crossing path. 
-$p=10$ mostly commits to the right-hand route with only faint density inside the wedge, and $p=30$ and lagr both route right on every seed ($100%$), leaving no visible points in the zone, except on the edge. 
+the policy away from the shorter, zone-crossing path.
+$p=10$ mostly commits to the right-hand route with only faint density inside the wedge, and $p=30$ and lagr both route right on every seed ($100%$), leaving no visible points in the zone, except on the edge.
 #v(-10pt)
 \
-The qualitative difference between $p=10$ and lagr that @tab-pendulum-pooled quantifies(lagr's zone entries being shallower, not just similarly rare) is visible here too: 
+The qualitative difference between $p=10$ and lagr that @tab-pendulum-pooled quantifies(lagr's zone entries being shallower, not just similarly rare) is visible here too:
 where $p=10$'s faint density inside the wedge reaches noticeably toward its center, lagr's entries are only close to the boundary, barely crossing the red line before turning back.
 
 #figure(
@@ -130,5 +130,84 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
   ],
 ) <fig-vis-trajectories>
 
+== LunarLander: Baseline vs. Lagrangian
 
-#todo[TODO: add the LunarLander section,]
+#let rows = csv("ll_group_comparison.csv", row-type: dictionary)
+
+#let display = (
+  "Zone depth-weighted step fraction": (label: [Zone depth-weighted \ step fraction], percent: true, decimals: 3),
+  "True return": (label: [True return], percent: false, decimals: 1),
+  "Landing success rate": (label: [Landing success rate], percent: true, decimals: 1),
+  "Strict landing rate": (label: [Strict landing rate], percent: true, decimals: 1),
+  "Crash rate": (label: [Crash rate], percent: true, decimals: 1),
+  "Timeout rate": (label: [Timeout rate], percent: true, decimals: 1),
+  "Wall-clock training time (s)": (label: [Wall-clock training time (s)], percent: false, decimals: 1),
+)
+
+#let fmt-cell(mean, std, spec) = {
+  let scale = if spec.percent { 100 } else { 1 }
+  let unit = if spec.percent { "%" } else { "" }
+  let m = calc.round(float(mean) * scale, digits: spec.decimals)
+  let s = calc.round(float(std) * scale, digits: spec.decimals)
+  [#m $plus.minus$ #s#unit]
+}
+
+#let group-ids = rows.first().keys().filter(k => k.ends-with("_mean")).map(k => k.slice(0, k.len() - 5))
+
+#let pretty-label(gid) = {
+  if gid == "baseline" {
+   [Baseline\ ($p in {2, 10, 30}$)]
+  } else if gid == "lagr" {
+   [Lagr\ ($epsilon = 0.01$)]
+  } else { raw(gid) }
+}
+
+#figure(
+  table(
+   columns: (auto,) + group-ids.map(_ => 1fr),
+   align: (left,) + group-ids.map(_ => center),
+   stroke: none,
+   table.hline(stroke: 1pt),
+   table.header(
+     table.cell(align: left)[*Metric*],
+     ..group-ids.map(gid => table.cell(align: center)[*#pretty-label(gid)*]),
+   ),
+   table.hline(stroke: 0.6pt),
+   ..rows.map(row => {
+     let spec = display.at(row.metric)
+     let lower-better = int(row.lower_is_better) == 1
+     let means = group-ids.map(gid => float(row.at(gid + "_mean")))
+     let best = if lower-better { calc.min(..means) } else { calc.max(..means) }
+     (
+       spec.label,
+       ..group-ids.map(gid => {
+         let cell = fmt-cell(row.at(gid + "_mean"), row.at(gid + "_std"), spec)
+         if float(row.at(gid + "_mean")) == best { strong(cell) } else { cell }
+       }),
+     )
+   }).flatten(),
+   table.hline(stroke: 1pt),
+  ),
+  kind: table,
+  caption: figure.caption(position: bottom)[
+   LunarLander, clean-reward evaluation (100 episodes/seed). Baseline pools
+   $p in {2, 10, 30}$ (3 seeds each, $n=9$); Lagrangian uses a fixed
+   $epsilon = 0.01$ (6 seeds, $n=6$). Bold marks the better mean per row.
+  ],
+) <tab-ll-pooled>
+
+Lagrangian outperforms the pooled baseline on task performance (true return, landing success,
+strict landing) while reducing the crash rate.
+The timeout rate is similar (16.1% vs. 15.5%), with Lagrangian slightly lower, and both methods remain comparable in zone-depth behavior.
+Crash rates are minimal but substantially lower under Lagrangian (2.4% vs. 0.1%), suggesting smoother approach behavior.
+This phenomenon can be viewed in the trajectories of @fig-ll-combined-traj in the appendix, where the Lagrangian policy approaches the landing pad more directly and with less overshoot and outliers than the baseline.
+Wall-clock training time is similar, confirming that adaptive weighting incurs no computational penalty.
+The results support the generalization claim: Lagrangian weighting adapts effectively to a fundamentally different task structure (landing vs. swing-up) with different observation spaces (8D vs. 3D) and action spaces, demonstrating that this approach of density-aware penalty adaptation is not specific to the Pendulum domain.
+As shown in @fig-ll-alpha-trajectory, the multiplier rises when the policy still enters the sparse region and then relaxes once the constraint is satisfied similarly as in the Pendulum experiments, indicating that the avoidance penalty is automatically tuned during training rather than fixed by hand.
+
+#figure(
+  align(center)[#image("../figures/ll_alpha_trajectory.png", width: 100%)],
+  caption: [
+    Lagrangian dual variable $alpha$ over training for LunarLander, pooled across six different seeds.
+  ],
+) <fig-ll-alpha-trajectory>

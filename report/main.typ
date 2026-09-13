@@ -47,7 +47,7 @@ Model-based offline reinforcement learning policies can exploit regions of state
     ),
     
   ),
-  index-terms: ("Affective AI", "LLM", "VLM", "Intention Detection"),
+  index-terms: ("Affective AI", "LLM", "VLM", "Intention Detection", "RL"),
   bibliography: none,
   figure-supplement: [Fig.],
 )
