@@ -14,6 +14,8 @@ can be read against each hand-tuned value on its own rather than against their a
   "True return": (label: [True return], percent: false, decimals: 1),
   "Upright success rate": (label: [Upright success rate], percent: true, decimals: 1),
   "Time to upright (steps)": (label: [Time to upright (steps)], percent: false, decimals: 1),
+  "Left path": (label: [Left path], percent: true, decimals: 1),
+  "Right path": (label: [Right path], percent: true, decimals: 1),
   "Wall-clock training time (s)": (label: [Wall-clock training time (s)], percent: false, decimals: 1),
 )
 

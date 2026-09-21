@@ -68,9 +68,9 @@ def make_sim_env(env_cfg: dict, transition_model=None, render_mode=None) -> gym.
     (holding dynamics fixed across methods isolates the cost-signal effect)."""
     env_id = env_cfg.get("id", "E1")
     if env_id in ("E1", "E2", "E3"):
-        env = make_pendulum_env(env_cfg)
+        env = make_pendulum_env(env_cfg, render_mode=render_mode)
     elif env_id == "LL":
-        env = make_lunar_lander_env(env_cfg)
+        env = make_lunar_lander_env(env_cfg, render_mode=render_mode)
     else:
         raise ValueError(f"unknown env id {env_id}")
 

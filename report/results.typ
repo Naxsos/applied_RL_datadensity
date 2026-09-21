@@ -14,6 +14,8 @@
   "True return": (label: [True return], percent: false, decimals: 1),
   "Upright success rate": (label: [Upright success rate], percent: true, decimals: 1),
   "Time to upright (steps)": (label: [Time to upright (steps)], percent: false, decimals: 1),
+  "Left path": (label: [Left path], percent: true, decimals: 1),
+  "Right path": (label: [Right path], percent: true, decimals: 1),
   "Wall-clock training time (s)": (label: [Wall-clock training time (s)], percent: false, decimals: 1),
 )
 
@@ -82,6 +84,7 @@
 \
 Lagrangian weighting matches or beats the pooled baseline on every metric in
 @tab-pendulum-pooled: $4.2 times$ shallower zone penetration, higher return, far more consistent upright success, and faster swing-up, at almost equal wall-clock cost.
+Per @tab-pendulum-by-p, only $p=30$ and lagr reliably take the zone-avoiding right path (100% of seeds, against $p=10$'s $83%$ and $p=2$'s $21%$).
 @fig-alpha-trajectory shows why: $alpha$ rises while
 the constraint is violated and decays toward 0 once $C < epsilon$, auto-tuning
 the penalty instead of relying on a hand-picked $p$.

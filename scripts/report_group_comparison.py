@@ -29,8 +29,15 @@ METRICS = [
     ("true_return_mean", "True return", False),
     ("upright_success_rate", "Upright success rate", False),
     ("time_to_upright_mean", "Time to upright (steps)", True),
+    ("left_path_pct", "Left path", True),
+    ("right_path_pct", "Right path", False),
     ("wall_clock_train_s", "Wall-clock training time (s)", True),
 ]
+
+# left/right path % is already a 0-100 value (see denrl/metrics.py); every
+# other rate metric here is a 0-1 fraction that the Typst table scales by
+# 100, so normalize these two to match before writing them out.
+PCT_ALREADY_SCALED = {"left_path_pct", "right_path_pct"}
 
 
 def load_runs(runs_dir: Path) -> list[dict]:
@@ -74,6 +81,8 @@ def main():
         row = {"metric": label, "lower_is_better": int(lower_better)}
         for g in groups:
             vals = np.array([r[key] for r in by_group[g] if r.get(key) is not None], dtype=float)
+            if key in PCT_ALREADY_SCALED:
+                vals = vals / 100
             # fixed-point (not round()+str, which flips tiny values like 1e-05
             # into scientific notation Typst's float() may not expect)
             row[f"{g}_mean"] = f"{vals.mean():.6f}" if len(vals) else ""

@@ -161,5 +161,5 @@ def as_lunar_zone(zone_cfg=None) -> LunarZone:
     return DEFAULT_LUNAR_ZONE
 
 
-def make_lunar_lander_env(env_cfg: dict) -> gym.Env:
-    return gym.make("LunarLander-v3", continuous=bool(env_cfg.get("continuous", False)))
+def make_lunar_lander_env(env_cfg: dict, render_mode=None) -> gym.Env:
+    return gym.make("LunarLander-v3", continuous=bool(env_cfg.get("continuous", False)), render_mode=render_mode)
