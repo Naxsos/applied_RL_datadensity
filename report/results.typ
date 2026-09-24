@@ -136,7 +136,7 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
 
 == LunarLander: Baseline vs. Lagrangian
 
-#let rows = csv("data/ll_group_comparison.csv", row-type: dictionary)
+#let rows = csv("data/ll_group_comparison_new.csv", row-type: dictionary)
 
 #let display = (
   "Zone depth-weighted step fraction": (label: [Zone depth-weighted \ step fraction], percent: true, decimals: 3),
@@ -200,19 +200,17 @@ where $p=10$'s faint density inside the wedge reaches noticeably toward its cent
   ],
 ) <tab-ll-pooled>
 
-Pooled against the baseline sweep, lagr reports a higher true return and strict landing
-rate, a substantially lower crash rate, and a comparable timeout rate and
+Pooled against the baseline sweep, lagr reports a higher true return and substantially higher strict landing and lower timeout rate and a comparable crash rate and
 zone depth-weighted step fraction (@tab-ll-pooled); @sec-discussion examines these differences
 against the baseline's individual $p$ settings rather than the pool.
 @fig-ll-combined-traj in the appendix visualizes the corresponding evaluation trajectories.
 
 #figure(
-  align(center)[#image("../figures/ll_alpha_trajectory.png", width: 100%)],
+  align(center)[#image("../figures/ll_alpha_trajectory_new.png", width: 100%)],
   caption: [
     Lagrangian dual variable $alpha$ (left) and constraint value $C$ (right) over training,
     lagr $epsilon = 0.01$, LunarLander, 6 seeds (thin lines), mean $plus.minus$ std shaded.
   ],
 ) <fig-ll-alpha-trajectory>
 
-The multiplier rises from $alpha_0 = 5$ while $C > epsilon$ early in training, peaks between $8.7$ and $23.2$ depending on the seed, and then decays, reaching $0$ in all six seeds. The right panel shows $C$ above $epsilon = 0.01$ early in training and mostly below it afterwards, with brief spikes that each raise $alpha$ again.
-On LunarLander, $C$ is driven by states at the outer edge of the offline coverage rather than by entries into the excluded box, inside which the cost signal is zero (@sec-discussion).
+The multiplier rises from $alpha_0 = 5$ while $C > epsilon$ early in training, peaks between about $10$ and $40$ depending on the seed, and then decays towords around $2$ averages over all six seeds. The right panel shows $C$ above $epsilon = 0.01$ early in training and mostly below it afterwards, with brief spikes that each raise $alpha$ again.

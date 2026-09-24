@@ -81,7 +81,7 @@ can be read against each hand-tuned value on its own rather than against their a
 @tab-ll-by-p below breaks that pool back out into its three individual settings, so lagr
 can be read against each hand-tuned value on its own rather than against their average.
  
-#let ll-by-p-rows = csv("data/ll_group_comparison_by_p.csv", row-type: dictionary)
+#let ll-by-p-rows = csv("data/ll_group_comparison_new_by_p.csv", row-type: dictionary)
  
 #let ll-by-p-display = (
   "Zone depth-weighted step fraction": (label: [Zone depth-weighted \ step fraction], percent: true, decimals: 3),
@@ -156,7 +156,7 @@ $epsilon = 0.01$. All panels use the same $x$/$y$ axis limits so the trajectory 
 be compared directly across methods without differences caused by panel-specific scaling.
  
 #figure(
-  image("../figures/ll_combined_traj.png", width: 100%),
+  image("../figures/ll_combined_traj_new.png", width: 100%),
   caption: [
     Combined LunarLander trajectory comparison from the v3-matrix runs in the
     `runs/LL` directory. Each panel pools the final trajectory states from six seeds for a

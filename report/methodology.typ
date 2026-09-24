@@ -189,9 +189,7 @@ with a maximum of 200 steps per episode, starting from Gymnasium's default initi
 distribution (for the pendulum, uniform over the circle, so that the upper half is covered).
 For the pendulum, actions were sampled from the torque interval. The LunarLander dataset was
 collected with the *discrete* action variant (random choice among no-op, left, main, and right
-engine), although policies are trained on the continuous variant; since the KDE uses only the
-position $(x, y)$, this changes how the state coverage was produced but not the form of the
-cost signal. Environment resets and action sampling were seeded for reproducibility.
+engine). Environment resets and action sampling were seeded for reproducibility.
 
 Each interaction produced a transition $(s_t, a_t, s_(t+1))$. If the next state
 $s_(t+1)$ lay inside the environment-specific excluded region, the transition
@@ -200,7 +198,7 @@ terminated. This created a low-density region in the offline data without
 modifying the underlying environment dynamics. Because the episode continues, the transition
 stored after a dropped one starts from the in-zone state, so a small number of in-zone states
 remain in the observation column: 5 of 153,045 transitions for E1, 9 of 89,516 for E3, and 391
-of 177,858 for LunarLander.
+of 524,995 for LunarLander.
 
 The collected transitions were stored as Parquet files containing the current
 observation, action, and next observation. The datasets were not used to train
@@ -229,27 +227,18 @@ the three predefined baseline weights.
 
 All policies are trained using the Stable-Baselines3 implementation of Soft
 Actor-Critic (SAC) with an MLP policy for 150,000 (for LunarLander 300,000) environment steps.
-Training episodes use the environments' default time limits, 200 steps for the pendulum and 1,000
+Training episodes use the environments' default time limits, 200 steps for the pendulum and 500
 steps for LunarLander. The KDE
-safety signal uses a bandwidth of 0.1 and is fitted on the positional part of the observation,
-$(cos theta, sin theta)$ for the pendulum and $(x, y)$ for LunarLander. For both pendulum methods and
-the LunarLander baseline, it uses a binary density threshold of 0.025:
+safety signal uses a bandwidth of 0.1 (for LunarLander 0.01) and is fitted on the positional part of the observation,
+$(cos theta, sin theta)$ for the pendulum and $(x, y)$ for LunarLander. For both pendulum and
+the LunarLander methods, it uses a binary density threshold of 0.025 for the Pendulum and 0.005 for LunarLander, so that:
 a state receives a safety cost of 1 when its estimated density is below this
 threshold and a cost of 0 otherwise.
-The LunarLander Lagrangian configuration omitted this threshold, so its runs used the
-implementation's continuous fallback,
-$c(s) = max(0, 1 - hat(rho)(s) slash rho_"ref")$, where $rho_"ref" approx 0.10$ is the 5th percentile of
-the estimated density over offline states. On a seeded random sample of 5,000 LunarLander offline
-states, this cost is non-zero on $5.6%$ of them, compared with $0.56%$ under the binary threshold, so
-on LunarLander the two methods were not trained on the same cost signal.
 #v(-10pt)
 \
 Both Lagrangian configurations use the ``cost'' constraint of @sec-metrics: $hat(C)$ is the mean
-cost over the last 500 training steps. On the pendulum, where the cost is binary, $epsilon = 0.01$
-therefore bounds the share of training steps in penalized (low-density) states at $1%$; this is
-not the same as the share of steps inside the excluded band (@sec-discussion). On LunarLander,
-$epsilon = 0.01$ bounds the mean of the continuous cost and has no direct interpretation as a
-rate.
+cost over the last 500 training steps.  $epsilon = 0.01$
+therefore bounds the share of training steps in penalized (low-density) states at $1%$.
 
 Each of the four configurations is repeated with six independent random seeds,
 numbered 0 through 5. This produces 18 fixed-weight baseline runs and six
@@ -264,7 +253,7 @@ steps using 50 episodes. These evaluations monitor policy development without
 affecting the policy updates.
 
 Each policy is evaluated over 200 episodes, with
-a maximum length of 200 (for LunarLander 500, i.e. half the training limit) steps per episode.
+a maximum length of 200 (for LunarLander 500) steps per episode.
 Evaluation is performed in a separate, unpenalized environment using deterministic actions.
 Returns are calculated exclusively from the original task reward, while safety is measured
 separately using the zone-visit rate and the zone depth-weighted step fraction. The final

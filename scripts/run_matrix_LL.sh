@@ -10,11 +10,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-read -r -a SEEDS <<< "${SEEDS:-0 1 2 3 4 5}"
-STEPS=${STEPS:-300000}
+read -r -a SEEDS <<< "${SEEDS:-6 7 8 9}"
+STEPS=${STEPS:-500000}
 EVAL_EPISODES=${EVAL_EPISODES:-200}
 PARALLEL=${PARALLEL:-4}
-SUFFIX=${SUFFIX:-matrix}
+SUFFIX=${SUFFIX:-matrix_zone2}
 PY=${PY:-python}
 
 JOBFILE=$(mktemp)

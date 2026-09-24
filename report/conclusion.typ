@@ -58,39 +58,27 @@ does not remove the need to scale the dual step appropriately relative to the tr
 This environment changes the reward scale (per-step shaping rewards of order one and
 terminal rewards of $plus.minus 100$), the dimensionality of observations and actions, and the
 sparse-region geometry: the excluded box $[-0.075, 0.075] times [0.5, 1.0]$ lies above the pad
-on the direct descent path. With the Pendulum dual setting unchanged, but with the continuous
-instead of the binary KDE cost (@sec-protocol), the Lagrangian at $epsilon = 0.01$ reached a clean return of
-$243.6 plus.minus 63.8$ compared with $233.1 plus.minus 52.4$ for the pooled sweep
-$p in {2, 10, 30}$ (@tab-ll-pooled), strict landing in $84.4 plus.minus 33.1%$ compared with
-$81.5 plus.minus 25.3%$ of episodes, and a crash rate of $0.08 plus.minus 0.19%$ compared with
-$2.4 plus.minus 3.4%$, at a wall-clock cost of $2565$ s compared with $2481$ s.
+on the direct descent path. With the Pendulum dual setting unchanged, but with an updated KDE configuration to detect the low desity region right (@sec-protocol), the Lagrangian at $epsilon = 0.01$ reached a clean return of
+$258.0 plus.minus 25.7$ compared with $200.1 plus.minus 100.7$ for the pooled sweep
+$p in {2, 10, 30}$ (@tab-ll-pooled), strict landing in $96.40 plus.minus 6.4%$ compared with
+$71.4 plus.minus 39.3%$ of episodes, and a crash rate of $0.7 plus.minus 1.7%$ compared with
+$0.7 plus.minus 1.8%$, at a wall-clock cost of $3719$ s compared with $3728$ s.
+The striking point is not a universal return advantage, but the same dual adaptation pattern
+seen on the pendulum: the multiplier rises when the constraint is violated and then attenuates
+once the policy learns to stay within the covered state space, indicating that the mechanism is
+portable across tasks even though the exact optimum trade-off remains task-dependent.
 #v(-10pt)
 \
-The individual baseline settings do not reproduce the Pendulum trade-off between avoidance and
-task success. Depth-weighted occupancy is similar for all three weights ($1.05%$, $1.04%$ and
-$1.25%$ for $p = 2$, $10$ and $30$), while task performance degrades at both ends of the sweep:
-at $p = 2$ strict landing rates range from $51%$ to $99.5%$ across seeds, and at $p = 30$ one
-seed lands in $3%$ of episodes and times out in $97%$. The most consistent fixed setting is
-$p = 10$, with strict landing in $93.7 plus.minus 4.6%$ of episodes and a return of
-$260.0 plus.minus 17.0$.
+The individual baseline settings do reproduce the Pendulum trade-off between avoidance and
+task success. Depth-weighted occupancy is way lower for lagr ($0.44%$) than the $p=2$ baseline ($1.054%$). $p=10$ ($0.05%$) and $p=30$ ($0.01%$) beating lagr, while task performance degrades at higher $p$.
 #v(-10pt)
 \
 The multiplier trajectory in @fig-ll-alpha-trajectory follows the Pendulum pattern: $alpha$
-rises from $5$ to peaks between $8.7$ and $23.2$ while the early policy violates the
-constraint, then decays, ending at exactly $0$ with a final constraint value of $0$ in all six
-seeds. The point at which $alpha$ first reaches $0$ varies between $68.5$k and $281$k of the
-$300$k training steps, so the penalty is withdrawn per seed once avoidance holds rather than
+rises from $5$ to peaks between $10$ and $40$ while the early policy violates the
+constraint, then decays, ending at around $2$ averaged over all six
+seeds. The point at which $alpha$ first reaches a low value varies between $300$k and $375$k of the
+$500$k training steps, so the penalty is withdrawn per seed once avoidance holds rather than
 applied for the full budget.
-#v(-10pt)
-\
-Neither method avoids the box itself: Lagrangian and fixed-weight policies enter it in $25.3%$
-and $27.3%$ of evaluation episodes, with depth-weighted occupancy of $0.95 plus.minus 0.19%$ and
-$1.11 plus.minus 0.49%$. The box is only $1.5$ KDE bandwidths wide, so the density estimate fills
-it in and the cost, and with it the penalty, is zero inside the box for every weight
-(@sec-discussion). The LunarLander runs therefore test whether policies remain within the covered
-state space rather than whether they avoid the box. Within that scope, the Lagrangian improves
-the consistency of crash rate and occupancy across seeds, and its mean advantage in return and
-landing is small relative to the variation between seeds, as discussed below.
 
 == Limitations and outlook.
 #v(-10pt)
@@ -100,41 +88,24 @@ $epsilon = 0.01$, and KDE over position as the single type of cost signal. Train
 true simulator excludes model exploitation by construction, leaving the original motivation
 for density penalties untested. The adaptive method also introduces dual hyperparameters
 and a transient phase in which $alpha$ can overshoot before settling.
-On LunarLander, the threshold of $0.025$ was omitted from the Lagrangian configuration, so its
-runs used the continuous KDE cost while the baselines used the binary one (@sec-protocol). The two
-methods were therefore not trained on the same cost signal, and differences between them, in
-particular in crash rate, cannot be attributed to the adaptive weighting alone.
-
-On LunarLander, the mean differences between the Lagrangian and the pooled fixed weight in
-return ($243.6 plus.minus 63.8$ compared with $233.1 plus.minus 52.4$), strict landing
-($84.4%$ compared with $81.5%$), timeout rate and depth-weighted occupancy ($0.95%$ compared
-with $1.11%$) lie within one standard deviation across seeds, and the best single weight,
-$p = 10$, has the higher mean return ($260.0 plus.minus 17.0$) and strict landing rate
-($93.7%$). The Lagrangian means are, however, dominated by one seed that times out in $89%$ of
-episodes. This failure is not attributable to the constraint: its $alpha$ first reaches $0$
-after $68.5$k steps and averages $0.15$ over the remaining training, so the policy was trained
-on an almost unpenalized reward, and timeout rates above $30%$ also occur in 5 of 18
-fixed-weight runs. The other five Lagrangian seeds land strictly in $97.5%$ to $100%$ of episodes, and the
-median seed exceeds $p = 10$ in return ($269.7$ compared with $264.0$) and strict landing
-($99.2%$ compared with $95.0%$). In addition, $p = 10$ is identified as best only after
-training the full sweep of 18 runs, whereas the Lagrangian reuses the Pendulum setting
-($epsilon = 0.01$, $eta_alpha = 10$, $alpha_0 = 5$) without adjustment, and it is the only
-method whose crash rate stays at or below $0.5%$ in every seed (compared with up to $11%$ in
-8 of 18 fixed-weight runs). With six seeds, the lander results establish that a single
-untuned tolerance is competitive with the best fixed weight of a sweep, at $3%$ higher
-wall-clock cost, but not that it outperforms it.
 
 Defining the constraint per training step leaves the per-episode visit rate unbounded, though safety
 requirements are frequently phrased in those terms; evaluating such requirements directly would require a
-per-episode constraint, or $epsilon$ combined with hard termination on zone entry. In
-LunarLander, the excluded box is narrower than the smoothing of the density estimate, so the
-cost signal never marks it and box avoidance remains untested; this would require a zone several
-bandwidths wide or a smaller bandwidth. The
+per-episode constraint, or $epsilon$ combined with hard termination on zone entry. The
 wider band E3 did not permit a zone-free swing-up, so the auto-tuning claim under
 shifted zone geometry remains untested on the pendulum.
 
-Directions for future work are to rerun the LunarLander comparison with a matched cost signal
-and a zone the density estimate resolves, to evaluate several tolerances and more seeds there
-and compare them against the best single fixed weight rather than the pooled sweep, to
-restore the learned transition model, and to replace standard dual ascent with a damped
-variant @stooke2020 in order to shorten the transient.
+Directions for future work are to quantify sensitivity to $epsilon$ and to the number of seeds,
+repeating the comparison for several tolerances and more seeds and comparing
+against the best single fixed weight rather than the pooled sweep. This would separate
+method sensitivity from random variation and test whether the same tolerance can transfer
+robustly across runs. A second direction is to improve the density estimator itself by
+comparing KDE with alternative cost signals such as k-nearest-neighbor distance estimates,
+normalizing-flow density models, or other local density ratios, since the current KDE may smooth
+across the excluded zone and can blur the effective boundary with a non-elaborated configuration. A third direction is to impose a
+stricter constraint formulation, for example a per-episode constraint, a CVaR-style risk
+constraint penalizing with a mean cost over the worst episodes, or $epsilon$ combined with hard termination on zone entry, so that the safety
+objective is aligned with the practical requirement rather than with the average per-step cost.
+Finally, the learned transition model could be restored for the offline setting, and standard
+dual ascent could be replaced by a damped or otherwise stabilized variant @stooke2020 to
+shorten the transient and reduce overshoot before the multiplier settles.

@@ -104,17 +104,66 @@ class PenalizedEnv(gym.Wrapper):
         self.cost_signal = cost_signal
         self.weight = weight
         self.zone = zone if hasattr(zone, "contains") else as_zone(zone)
+        self.reset_penalty_stats()
+
+    def reset_penalty_stats(self):
+        self.penalty_stats = {
+            "steps": 0,
+            "penalized_steps": 0,
+            "cost_positive_steps": 0,
+            "zone_steps": 0,
+            "cost_sum": 0.0,
+            "penalty_sum": 0.0,
+            "raw_cost_sum": 0.0,
+            "max_cost": 0.0,
+            "max_penalty": 0.0,
+        }
+
+    def get_penalty_stats(self) -> dict:
+        steps = int(self.penalty_stats["steps"])
+        penalized_steps = int(self.penalty_stats["penalized_steps"])
+        cost_positive_steps = int(self.penalty_stats["cost_positive_steps"])
+        zone_steps = int(self.penalty_stats["zone_steps"])
+        return {
+            "train_steps": steps,
+            "train_penalized_steps": penalized_steps,
+            "train_penalized_step_frac": (penalized_steps / steps) if steps else 0.0,
+            "train_cost_positive_steps": cost_positive_steps,
+            "train_cost_positive_step_frac": (cost_positive_steps / steps) if steps else 0.0,
+            "train_zone_steps": zone_steps,
+            "train_zone_step_frac": (zone_steps / steps) if steps else 0.0,
+            "train_cost_sum": float(self.penalty_stats["cost_sum"]),
+            "train_penalty_sum": float(self.penalty_stats["penalty_sum"]),
+            "train_raw_cost_sum": float(self.penalty_stats["raw_cost_sum"]),
+            "train_cost_mean": (float(self.penalty_stats["cost_sum"]) / steps) if steps else 0.0,
+            "train_penalty_mean": (float(self.penalty_stats["penalty_sum"]) / steps) if steps else 0.0,
+            "train_raw_cost_mean": (float(self.penalty_stats["raw_cost_sum"]) / steps) if steps else 0.0,
+            "train_max_cost": float(self.penalty_stats["max_cost"]),
+            "train_max_penalty": float(self.penalty_stats["max_penalty"]),
+        }
 
     def step(self, action):
         obs, reward, term, trunc, info = self.env.step(action)
         c = self.cost_signal.cost(obs, action)
         w = self.weight.value(c, info)
+        raw_cost = float(self.cost_signal.raw(obs, action))
+        in_zone = bool(self.zone.contains(obs))
+        penalty = float(w) * float(c)
         info.update({
             "clean_reward": float(reward),
             "cost": float(c),
-            "raw_cost": float(self.cost_signal.raw(obs, action)),
+            "raw_cost": raw_cost,
             "weight": float(w),
-            "in_zone": self.zone.contains(obs),
+            "in_zone": in_zone,
         })
+        self.penalty_stats["steps"] += 1
+        self.penalty_stats["cost_positive_steps"] += int(c > 0.0)
+        self.penalty_stats["penalized_steps"] += int(penalty > 0.0)
+        self.penalty_stats["zone_steps"] += int(in_zone)
+        self.penalty_stats["cost_sum"] += float(c)
+        self.penalty_stats["penalty_sum"] += penalty
+        self.penalty_stats["raw_cost_sum"] += raw_cost
+        self.penalty_stats["max_cost"] = max(float(self.penalty_stats["max_cost"]), float(c))
+        self.penalty_stats["max_penalty"] = max(float(self.penalty_stats["max_penalty"]), penalty)
         self.weight.observe(c, info)   # after info is filled: Lagrangian reads in_zone
-        return obs, float(reward) - w * c, term, trunc, info
+        return obs, float(reward) - penalty, term, trunc, info

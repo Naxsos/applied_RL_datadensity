@@ -1,0 +1,7 @@
+metric,lower_is_better,baseline_mean,baseline_std,baseline_n,lagr_mean,lagr_std,lagr_n
+Zone depth-weighted step fraction,1,0.003663,0.005214,18,0.004432,0.005964,6
+True return,0,200.127685,100.670829,18,258.005093,25.683606,6
+Strict landing rate,0,0.714048,0.393363,18,0.960000,0.063527,6
+Crash rate,1,0.007381,0.017903,18,0.007143,0.017496,6
+Timeout rate,1,0.278571,0.389295,18,0.032857,0.046893,6
+Wall-clock training time (s),1,3728.800000,88.102132,18,3719.000000,42.426137,6

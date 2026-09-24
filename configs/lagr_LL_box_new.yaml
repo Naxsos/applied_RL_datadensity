@@ -1,0 +1,36 @@
+# LunarLander Lagrangian run with the canonical central box-zone.
+# The actual box geometry lives in configs/ll_box_zone.yaml so it is defined once.
+method: lagr
+env:
+  id: LL
+  continuous: true
+  offline_dataset: data/LL_offline.parquet
+  excluded_zone: box
+transition_model:
+  type: lstm
+  frozen_checkpoint: null
+  obs_dim: 8
+  act_dim: 2
+cost_signal:
+  type: kde_density
+  bandwidth: 0.01
+  ref_percentile: 5.0
+  threshold: 0.005
+weight:
+  type: lagrangian
+  constraint: cost
+  epsilon: 0.01
+  eta_alpha: 10
+  alpha_init: 5.0
+  alpha_max: null
+  update_freq: 500
+agent:
+  algo: sac
+  total_steps: 300000
+eval:
+  episodes: 200
+  max_steps: 500
+  reward: clean
+compute:
+  local_mem_budget_mb: 18000
+  device: mps

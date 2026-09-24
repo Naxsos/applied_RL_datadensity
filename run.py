@@ -167,6 +167,7 @@ def main():
         "hparam": _knob(cfg),
         "device": device,
     })
+    result.update(penalized.get_penalty_stats())
     result.update(weight.log_state())
     if isinstance(weight, LagrangianWeight):
         result["alpha_trajectory_len"] = len(weight.trajectory)
